@@ -1420,6 +1420,28 @@
           `;
         }
 
+        // Datos físicos y objetos (estructura PokéAPI /pokemon/{id})
+        const heightM = poke.height != null ? (poke.height / 10).toFixed(1) : '—';
+        const weightKg = poke.weight != null ? (poke.weight / 10).toFixed(1) : '—';
+        const baseExp = poke.base_experience != null ? poke.base_experience : '—';
+        const cryUrl = poke.cries?.latest || poke.cries?.legacy || null;
+
+        // Objetos que puede llevar (held_items)
+        let heldHtml = '';
+        if (poke.held_items && poke.held_items.length) {
+          const heldParts = await Promise.all(poke.held_items.map(async (h) => {
+            const itemName = await translateName('item', h.item.name.replace(/-/g, ' '));
+            const rarities = (h.version_details || []).map(v => v.rarity);
+            const maxR = rarities.length ? Math.max(...rarities) : null;
+            return `<span class="comp-move">${itemName}${maxR != null ? ` <small style="opacity:.7">(${maxR}%)</small>` : ''}</span>`;
+          }));
+          heldHtml = `
+            <div class="section-title">Objetos que puede llevar</div>
+            <p class="section-subtitle">Objetos salvajes posibles según juegos (rareza máxima aproximada).</p>
+            <div class="comp-moves" style="margin-bottom:1rem">${heldParts.join('')}</div>
+          `;
+        }
+
         content.innerHTML = `
           <div class="modal-header">
             <img class="modal-img" src="${artworkUrl(id)}" alt="${displayName}"
@@ -1434,11 +1456,19 @@
               <div class="types" style="justify-content:flex-start;margin-bottom:0.75rem">
                 ${types.map(t => typeBadge(t)).join('')}
               </div>
+              <div class="comp-set-meta" style="margin-bottom:0.6rem">
+                <span>Altura: ${heightM} m</span>
+                <span>Peso: ${weightKg} kg</span>
+                <span>Exp. base: ${baseExp}</span>
+                ${cryUrl ? `<button type="button" class="comp-tab" id="playCryBtn" style="padding:0.25rem 0.6rem">🔊 Grito</button>` : ''}
+              </div>
               <p class="desc">${flavor}</p>
             </div>
           </div>
 
           ${formsHtml}
+
+          ${heldHtml}
 
           <div class="section-title">Habilidades</div>
           <p class="section-subtitle">La habilidad normal suele ser la más usada en competitivo. Las ocultas normalmente requieren eventos especiales o crianza.</p>
@@ -1540,6 +1570,16 @@
         content.querySelectorAll('.mega-card').forEach(card => {
           card.addEventListener('click', () => openDetail(+card.dataset.formid));
         });
+
+        // Grito del Pokémon (cries de PokéAPI)
+        const cryBtn = document.getElementById('playCryBtn');
+        if (cryBtn && cryUrl) {
+          cryBtn.addEventListener('click', () => {
+            const audio = new Audio(cryUrl);
+            audio.volume = 0.6;
+            audio.play().catch(() => {});
+          });
+        }
 
         loadMoves(sampleMoves);
 
