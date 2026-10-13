@@ -1,0 +1,2421 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tutorial Combates Pokémon</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --player: #00e676;
+  --enemy: #ff5252;
+  --accent: #ffea00;
+  --pokered: #e53935;
+  --bg-soft: #1a1520;
+  --card: #2d2438;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Nunito', system-ui, sans-serif;
+  background: linear-gradient(160deg, #1e1a28 0%, #2a2035 50%, #1a1525 100%);
+  color: #f5f0ff;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+.screen { display: none; }
+.screen.active { display: block; animation: fadeIn .3s ease; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+/* ===== MENU ===== */
+.menu {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background:
+    radial-gradient(ellipse at 30% 20%, rgba(255, 82, 82, 0.35) 0%, transparent 50%),
+    radial-gradient(ellipse at 70% 80%, rgba(255, 214, 0, 0.15) 0%, transparent 45%),
+    linear-gradient(165deg, #c62828 0%, #8e1a1a 40%, #4a1520 100%);
+  text-align: center;
+  padding: 20px;
+  position: relative;
+}
+.pokeball-icon {
+  width: 72px; height: 72px;
+  border-radius: 50%;
+  background: linear-gradient(180deg, #fff 0 48%, #333 48% 52%, #ef5350 52% 100%);
+  border: 4px solid #222;
+  margin: 0 auto 18px;
+  position: relative;
+  box-shadow: 0 4px 0 #111, 0 12px 28px rgba(0,0,0,.35), 0 0 40px rgba(255,80,80,.25);
+  animation: ballPulse 2.5s ease-in-out infinite;
+}
+@keyframes ballPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.06); }
+}
+.pokeball-icon::after {
+  content: "";
+  position: absolute;
+  width: 18px; height: 18px;
+  background: #fff;
+  border: 3px solid #222;
+  border-radius: 50%;
+  top: 50%; left: 50%;
+  transform: translate(-50%,-50%);
+}
+.menu-logo {
+  font-family: 'Press Start 2P', cursive;
+  font-size: clamp(22px, 5vw, 36px);
+  color: #fff;
+  text-shadow: 3px 3px 0 #5d0000, 0 0 20px rgba(255,200,0,.4);
+  margin-bottom: 6px;
+  letter-spacing: 1px;
+}
+.menu-sub { color: #ffe0e0; margin-bottom: 28px; font-size: 16px; font-weight: 700; text-shadow: 0 1px 4px rgba(0,0,0,.3); }
+.menu-btn {
+  display: block;
+  width: 300px;
+  margin: 12px auto;
+  padding: 16px;
+  font-family: 'Nunito', sans-serif;
+  font-weight: 800;
+  font-size: 16px;
+  border: 3px solid #ffcdd2;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #ef5350, #c62828);
+  color: #fff;
+  cursor: pointer;
+  box-shadow: 0 6px 0 #7f0000, 0 8px 20px rgba(0,0,0,.25);
+  transition: .2s cubic-bezier(.34,1.56,.64,1);
+  text-transform: uppercase;
+}
+.menu-btn:hover { transform: translateY(-3px) scale(1.02); filter: brightness(1.12); box-shadow: 0 8px 0 #7f0000, 0 12px 28px rgba(0,0,0,.3); }
+.menu-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 #7f0000; }
+.menu-btn.dark {
+  background: linear-gradient(180deg, #5c6bc0, #3949ab);
+  border-color: #c5cae9;
+  box-shadow: 0 6px 0 #1a237e, 0 8px 20px rgba(0,0,0,.25);
+}
+.menu-btn.dark:hover { box-shadow: 0 8px 0 #1a237e, 0 12px 28px rgba(0,0,0,.3); }
+
+/* ===== TEAM ===== */
+.team-wrap { max-width: 1000px; margin: 0 auto; padding: 16px; }
+.team-header { text-align: center; margin-bottom: 16px; }
+.team-header h2 { font-size: 22px; font-weight: 800; color: #fff; text-shadow: 0 2px 8px rgba(0,0,0,.3); }
+.selected-bar {
+  background: rgba(45, 36, 56, 0.85);
+  border: 2px solid rgba(255, 152, 152, 0.45);
+  border-radius: 14px;
+  padding: 12px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+  box-shadow: 0 4px 16px rgba(0,0,0,.2);
+}
+.slots { display: flex; gap: 8px; }
+.slot {
+  width: 58px; height: 58px;
+  border-radius: 10px;
+  background: rgba(30, 25, 40, 0.7);
+  border: 2px dashed rgba(255,255,255,.25);
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden;
+}
+.slot.filled { border-style: solid; border-color: #ef5350; background: rgba(239,83,80,.2); }
+.slot img { width: 50px; height: 50px; image-rendering: pixelated; }
+.poke-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.poke-card {
+  background: linear-gradient(160deg, #3d2a45, #2a1f35);
+  border: 3px solid rgba(255,255,255,.12);
+  border-radius: 14px;
+  padding: 10px 6px 12px;
+  text-align: center;
+  cursor: pointer;
+  transition: .2s cubic-bezier(.34,1.56,.64,1);
+  position: relative;
+  box-shadow: 0 4px 12px rgba(0,0,0,.2);
+}
+.poke-card:hover { transform: translateY(-5px) scale(1.03); border-color: rgba(255,234,0,.6); box-shadow: 0 8px 20px rgba(255,200,0,.15); }
+.poke-card.selected {
+  border-color: #ef5350;
+  background: linear-gradient(160deg, #6d2030, #3a1520);
+  box-shadow: 0 0 0 3px rgba(239,83,80,.35), 0 6px 16px rgba(0,0,0,.25);
+}
+.poke-card.selected::after {
+  content: "✓";
+  position: absolute; top: 6px; right: 8px;
+  background: #e53935; color: #fff;
+  width: 20px; height: 20px; border-radius: 50%;
+  font-weight: 900; font-size: 12px;
+  display: flex; align-items: center; justify-content: center;
+}
+.poke-sprite { width: 88px; height: 88px; image-rendering: pixelated; display: block; margin: 0 auto 4px; }
+.poke-name { font-weight: 800; font-size: 13px; margin-bottom: 3px; }
+.type-badge {
+  display: inline-block;
+  padding: 2px 7px;
+  border-radius: 12px;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: #fff;
+  text-shadow: 0 1px 1px rgba(0,0,0,.4);
+  margin: 1px;
+}
+.type-normal{background:#9e9e9e}.type-fuego{background:#ff5722}.type-agua{background:#2196f3}
+.type-eléctrico{background:#ffc107;color:#333}.type-planta{background:#4caf50}.type-hielo{background:#00bcd4}
+.type-lucha{background:#d32f2f}.type-veneno{background:#9c27b0}.type-tierra{background:#795548}
+.type-volador{background:#7e57c2}.type-psíquico{background:#e91e63}.type-bicho{background:#8bc34a;color:#222}
+.type-roca{background:#a1887f}.type-fantasma{background:#5e35b1}.type-dragón{background:#4527a0}
+.type-siniestro{background:#424242}.type-acero{background:#78909c}.type-hada{background:#f48fb1;color:#4a148c}
+
+.btn {
+  background: linear-gradient(180deg,#ef5350,#c62828);
+  border: 2px solid #ffcdd2;
+  color: #fff;
+  font-weight: 700;
+  font-size: 15px;
+  padding: 12px 24px;
+  border-radius: 12px;
+  cursor: pointer;
+  box-shadow: 0 4px 0 #7f0000, 0 6px 14px rgba(0,0,0,.2);
+  transition: .18s cubic-bezier(.34,1.56,.64,1);
+}
+.btn:hover { transform: translateY(-2px) scale(1.02); filter: brightness(1.08); }
+.btn:disabled { opacity: .4; cursor: not-allowed; transform: none; }
+.btn-outline {
+  background: rgba(255,255,255,.08);
+  border: 2px solid rgba(255,255,255,.35);
+  box-shadow: none;
+  color: #e8e0f0;
+}
+.btn-outline:hover { background: rgba(255,255,255,.15); border-color: #ffcdd2; color: #fff; }
+.btn-sm { padding: 7px 14px; font-size: 13px; }
+
+/* ===== BATTLE FIELD - IMAGE BACKGROUND ===== */
+#screen-battle.active {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px 0;
+}
+.battle-wrap {
+  max-width: 920px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 0 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.battle-field {
+  position: relative;
+  width: 100%;
+  max-width: 880px;
+  height: min(520px, 75vh);
+  border: 4px solid #222;
+  border-radius: 8px;
+  overflow: hidden;
+  background-size: cover !important;
+  background-position: center bottom !important;
+  background: url('data:image/jpeg;base64,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') center / cover no-repeat;
+  image-rendering: auto;
+}
+.weather-overlay {
+  position: absolute; inset: 0;
+  pointer-events: none; z-index: 6;
+  opacity: 0; transition: opacity .4s;
+}
+.weather-overlay.active { opacity: 1; }
+.weather-rain { background: repeating-linear-gradient(180deg, transparent, transparent 6px, rgba(180,220,255,.18) 6px, rgba(180,220,255,.18) 8px); animation: rain .35s linear infinite; }
+.weather-sun { background: radial-gradient(circle at 75% 12%, rgba(255,230,80,.35), transparent 45%); }
+.weather-sand { background: repeating-linear-gradient(40deg, transparent, transparent 5px, rgba(210,180,100,.12) 5px, rgba(210,180,100,.12) 7px); }
+@keyframes rain { from { background-position: 0 0; } to { background-position: 0 16px; } }
+
+.enemy-info {
+  position: absolute;
+  top: 12px; left: 12px;
+  background: #f8f8f8;
+  border: 3px solid #222;
+  border-radius: 4px;
+  padding: 5px 8px;
+  min-width: 165px;
+  z-index: 10;
+  font-family: 'Press Start 2P', cursive;
+  font-size: 9px;
+  color: #222;
+  box-shadow: 3px 3px 0 rgba(0,0,0,.25);
+}
+.enemy-info .name-row { display: flex; justify-content: space-between; margin-bottom: 3px; }
+.hp-classic {
+  height: 7px;
+  background: #444;
+  border: 1px solid #222;
+  border-radius: 1px;
+  overflow: hidden;
+}
+.hp-classic-fill { height: 100%; transition: width .35s; }
+.hp-classic-fill.high { background: #4caf50; }
+.hp-classic-fill.mid { background: #ffc107; }
+.hp-classic-fill.low { background: #f44336; }
+
+.player-info {
+  position: absolute;
+  bottom: 100px; right: 12px;
+  background: #f8f8f8;
+  border: 3px solid #222;
+  border-radius: 4px;
+  padding: 5px 8px;
+  min-width: 165px;
+  z-index: 10;
+  font-family: 'Press Start 2P', cursive;
+  font-size: 9px;
+  color: #222;
+  box-shadow: 3px 3px 0 rgba(0,0,0,.25);
+}
+
+/* Animated sprites positioned on the grass platforms */
+.sprite-enemy {
+  position: absolute;
+  /* Pies sobre el círculo de hierba derecha */
+  top: 32%;
+  right: 18%;
+  left: auto;
+  bottom: auto;
+  width: 150px;
+  height: 150px;
+  image-rendering: pixelated;
+  z-index: 4;
+  filter: drop-shadow(0 12px 4px rgba(0,0,0,.4));
+  object-fit: contain;
+  object-position: bottom center;
+  /* SIN animación idle: se queda fijo */
+  animation: none;
+  transform: none;
+}
+.sprite-player {
+  position: absolute;
+  /* Más grande y bajo = cerca de la cámara */
+  bottom: 11%;
+  left: 5%;
+  right: auto;
+  top: auto;
+  width: 210px;
+  height: 210px;
+  image-rendering: pixelated;
+  z-index: 5;
+  filter: drop-shadow(0 14px 5px rgba(0,0,0,.45));
+  object-fit: contain;
+  object-position: bottom center;
+  animation: none;
+  transform: none;
+}
+
+.message-box {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  background: #f8f8f8;
+  border-top: 4px solid #222;
+  padding: 10px 12px;
+  min-height: 70px;
+  font-family: 'Press Start 2P', cursive;
+  font-size: 10px;
+  line-height: 1.55;
+  z-index: 20;
+  color: #222;
+}
+
+.command-menu {
+  position: absolute;
+  bottom: 0; right: 0;
+  background: #f8f8f8;
+  border: 3px solid #222;
+  border-bottom: none;
+  border-right: none;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  z-index: 25;
+  min-width: 200px;
+}
+.cmd-btn {
+  padding: 11px 14px;
+  font-family: 'Press Start 2P', cursive;
+  font-size: 10px;
+  background: transparent;
+  border: 1px solid transparent;
+  color: #222;
+  cursor: pointer;
+  text-align: left;
+}
+.cmd-btn:hover, .cmd-btn.selected {
+  background: #e53935;
+  color: #fff;
+}
+
+.moves-menu {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  background: #f8f8f8;
+  border-top: 4px solid #222;
+  display: none;
+  grid-template-columns: 1fr 1fr;
+  z-index: 30;
+  min-height: 100px;
+}
+.moves-menu.active { display: grid; }
+.move-option {
+  padding: 9px 10px;
+  font-family: 'Press Start 2P', cursive;
+  font-size: 9px;
+  background: transparent;
+  border: 1px solid #ddd;
+  color: #222;
+  cursor: pointer;
+  text-align: left;
+}
+.move-option:hover, .move-option.selected {
+  background: #e53935;
+  color: #fff;
+}
+.move-option .meta { font-size: 7px; color: #666; margin-top: 2px; }
+.move-option.selected .meta { color: #ffcdd2; }
+
+.party-menu {
+  position: absolute;
+  top: 8%; left: 8%; right: 8%; bottom: 18%;
+  background: #f8f8f8;
+  border: 4px solid #222;
+  border-radius: 4px;
+  z-index: 40;
+  display: none;
+  padding: 10px;
+  overflow-y: auto;
+  color: #222;
+}
+.party-menu.active { display: block; }
+.party-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px;
+  border: 2px solid transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-bottom: 4px;
+  font-family: 'Press Start 2P', cursive;
+  font-size: 9px;
+}
+.party-item:hover, .party-item.selected { border-color: #e53935; background: #ffebee; }
+.party-item.fainted { opacity: .4; cursor: not-allowed; }
+.party-item img { width: 48px; height: 48px; image-rendering: pixelated; }
+
+.weather-badge {
+  position: absolute;
+  top: 52px; left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0,0,0,.75);
+  border: 2px solid #fff;
+  border-radius: 12px;
+  padding: 3px 10px;
+  font-family: 'Press Start 2P', cursive;
+  font-size: 8px;
+  z-index: 12;
+  display: none;
+  color: #fff;
+}
+.weather-badge.active { display: block; }
+
+.battle-controls {
+  margin-top: 10px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+  width: 100%;
+  max-width: 880px;
+  align-items: center;
+}
+.music-btn {
+  background: #333;
+  border: 2px solid #666;
+  color: #fff;
+  font-size: 12px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+/* TYPE CHART */
+.typechart-modal {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.85);
+  z-index: 100;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+.typechart-modal.active { display: flex; }
+.typechart-box {
+  background: #1a1a1a;
+  border: 3px solid #e53935;
+  border-radius: 8px;
+  padding: 16px;
+  max-width: 520px;
+  max-height: 85vh;
+  overflow-y: auto;
+  font-size: 12px;
+}
+.typechart-box h3 { font-family: 'Press Start 2P', cursive; font-size: 11px; margin-bottom: 10px; color: #e53935; }
+.typechart-box table { width: 100%; border-collapse: collapse; font-size: 10px; }
+.typechart-box td, .typechart-box th { padding: 2px 4px; border: 1px solid #333; text-align: center; }
+.typechart-box .se { color: #4caf50; font-weight: 800; }
+.typechart-box .nve { color: #ef9a9a; }
+.typechart-box .imm { color: #78909c; }
+
+.result {
+  min-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 20px;
+  background:
+    radial-gradient(ellipse at center, rgba(239,83,80,.4) 0%, transparent 55%),
+    linear-gradient(165deg, #8e2430 0%, #3d1a28 100%);
+}
+.result h1 {
+  font-family: 'Press Start 2P', cursive;
+  font-size: clamp(18px, 4vw, 28px);
+  margin-bottom: 16px;
+  text-shadow: 0 2px 12px rgba(0,0,0,.4);
+}
+.result.win h1 { color: #ffea00; }
+.result.lose h1 { color: #ffab91; }
+
+.footer { text-align: center; font-size: 11px; color: #a89bb8; margin: 16px 0; }
+
+/* Attack lunge */
+.sprite-player.attacking {
+  animation: lungePlayer 0.45s ease-out !important;
+}
+.sprite-enemy.attacking {
+  animation: lungeEnemy 0.45s ease-out !important;
+}
+@keyframes lungePlayer {
+  0% { transform: translate(0, 0); }
+  40% { transform: translate(36px, -10px); }
+  100% { transform: translate(0, 0); }
+}
+@keyframes lungeEnemy {
+  0% { transform: translate(0, 0); }
+  40% { transform: translate(-36px, -10px); }
+  100% { transform: translate(0, 0); }
+}
+.sprite-player.hit, .sprite-enemy.hit {
+  animation: hitFlash 0.4s ease !important;
+}
+@keyframes hitFlash {
+  0%, 100% { filter: drop-shadow(0 12px 3px rgba(0,0,0,.28)) brightness(1); }
+  30% { filter: drop-shadow(0 12px 3px rgba(0,0,0,.28)) brightness(2) saturate(0.5); }
+  50% { opacity: 0.4; }
+  70% { opacity: 1; }
+}
+
+/* Pokeball intro */
+.pokeball-intro {
+  position: absolute;
+  inset: 0;
+  z-index: 50;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,0,0,.55);
+  pointer-events: none;
+}
+.pokeball-intro.active { display: flex; }
+.pokeball-spin {
+  width: 72px; height: 72px;
+  border-radius: 50%;
+  background: linear-gradient(180deg, #fff 0 48%, #222 48% 52%, #e53935 52% 100%);
+  border: 5px solid #222;
+  position: relative;
+  animation: ballThrow 1.1s ease-out forwards;
+  box-shadow: 0 6px 0 #111;
+}
+.pokeball-spin::after {
+  content: "";
+  position: absolute;
+  width: 18px; height: 18px;
+  background: #fff;
+  border: 3px solid #222;
+  border-radius: 50%;
+  top: 50%; left: 50%;
+  transform: translate(-50%,-50%);
+}
+@keyframes ballThrow {
+  0% { transform: translateY(80px) scale(0.3) rotate(0deg); opacity: 0; }
+  40% { transform: translateY(-20px) scale(1.1) rotate(360deg); opacity: 1; }
+  70% { transform: translateY(0) scale(1) rotate(540deg); }
+  85% { transform: scale(1.15); }
+  100% { transform: scale(0); opacity: 0; }
+}
+
+
+.turn-timer {
+  top: 24px;
+  right: 24px;
+  font-size: 16px;
+  padding: 10px 16px;
+}
+.turn-timer {
+  position: absolute;
+  top: 12px; right: 12px;
+  background: rgba(0,0,0,.75);
+  border: 2px solid #fff;
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-family: 'Press Start 2P', cursive;
+  font-size: 12px;
+  color: #fff;
+  z-index: 15;
+  min-width: 70px;
+  text-align: center;
+}
+.turn-timer.urgent { color: #ff5252; border-color: #ff5252; animation: pulse 0.5s infinite; }
+@keyframes pulse { 50% { opacity: 0.6; } }
+
+
+/* ===== PANEL ADMIN ===== */
+.admin-panel {
+  position: fixed;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(420px, 94vw);
+  max-height: 90vh;
+  overflow-y: auto;
+  background: #1a1a1a;
+  border: 3px solid #e53935;
+  border-radius: 12px;
+  padding: 16px 18px 20px;
+  z-index: 200;
+  display: none;
+  color: #eee;
+  font-size: 13px;
+  box-shadow: 0 12px 40px rgba(0,0,0,.6);
+}
+.admin-panel.active { display: block; }
+.admin-panel h3 {
+  font-family: 'Press Start 2P', cursive;
+  font-size: 11px;
+  color: #e53935;
+  margin-bottom: 12px;
+}
+.admin-panel label {
+  display: block;
+  margin: 8px 0 4px;
+  color: #bbb;
+  font-size: 12px;
+}
+.admin-panel input[type="range"] { width: 100%; }
+.admin-panel .row-vals {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: #888;
+}
+.admin-panel .admin-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+.admin-panel .admin-actions button {
+  flex: 1;
+  min-width: 100px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 2px solid #555;
+  background: #333;
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+  font-size: 12px;
+}
+.admin-panel .admin-actions button.primary {
+  background: #e53935;
+  border-color: #ffcdd2;
+}
+.admin-hint { font-size: 11px; color: #777; margin-top: 10px; line-height: 1.4; }
+.admin-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.5);
+  z-index: 199;
+  display: none;
+}
+.admin-overlay.active { display: block; }
+
+</style>
+</head>
+<body>
+
+<!-- Música: pon battle-theme.mp3 en la MISMA carpeta que este HTML.
+     O cambia el src a cualquier link DIRECTO a un .mp3/.ogg (no YouTube). -->
+<audio id="bgm" loop preload="auto"></audio>
+
+<!-- MENU -->
+<div id="screen-menu" class="screen active">
+  <div class="menu">
+    <div class="pokeball-icon"></div>
+    <div class="menu-logo">POKÉMON</div>
+    <div class="menu-sub">Tutorial de Combates</div>
+    <button class="menu-btn" onclick="showWelcome()">▶ Combate Solitario</button>
+    <button class="menu-btn dark" onclick="showTypeChart()">📋 Tabla de Tipos</button>
+    <div style="margin-top:28px;font-size:12px;color:#ffe0e0;line-height:1.5">
+      Flechas + Enter · Música al iniciar combate
+    </div>
+  </div>
+</div>
+
+<!-- WELCOME -->
+<div id="screen-welcome" class="screen">
+  <div class="team-wrap" style="max-width:560px;margin-top:40px">
+    <div style="background:linear-gradient(160deg,#3d2a45,#2a1f35);border-radius:16px;padding:24px;border:3px solid #ef5350;box-shadow:0 8px 24px rgba(0,0,0,.25)">
+      <h2 style="font-size:18px;margin-bottom:8px">⚔️ Tutorial Solitario</h2>
+      <p style="color:#bbb;margin-bottom:14px;line-height:1.5;font-size:14px">Sprites animados Gen 5 · Fondo de hierba · Música de combate · Clima</p>
+      <button class="btn" onclick="startTeamSelect()">Comenzar</button>
+      <button class="btn btn-outline btn-sm" style="margin-left:8px" onclick="showMenu()">Menú</button>
+    </div>
+  </div>
+</div>
+
+<!-- TEAM -->
+<div id="screen-team" class="screen">
+  <div class="team-wrap">
+    <div class="team-header">
+      <h2>Elige tu equipo (3)</h2>
+      <p style="color:#999;font-size:13px">El bot elegirá Pokémon un poco más débiles</p>
+    </div>
+    <div class="selected-bar">
+      <div class="slots" id="slots">
+        <div class="slot" id="slot0"></div>
+        <div class="slot" id="slot1"></div>
+        <div class="slot" id="slot2"></div>
+      </div>
+      <div>
+        <span style="font-size:18px;font-weight:800;color:#e53935" id="selCount">0</span>/3
+        <button class="btn" id="btnStart" disabled onclick="startBattle()" style="margin-left:10px">¡A combatir!</button>
+      </div>
+    </div>
+    <div class="poke-grid" id="pokeGrid"></div>
+    <button class="btn btn-outline btn-sm" onclick="showWelcome()">← Volver</button>
+  </div>
+</div>
+
+<!-- BATTLE -->
+<div id="screen-battle" class="screen">
+  <div class="battle-wrap">
+    <div class="battle-field" id="battleField">
+      <div class="pokeball-intro" id="pokeballIntro"><div class="pokeball-spin"></div></div>
+      <div class="weather-overlay" id="weatherOverlay"></div>
+      <div class="weather-badge" id="weatherBadge"></div>
+      <div class="turn-timer" id="turnTimer" style="display:none">45s</div>
+
+      <div class="enemy-info">
+        <div class="name-row">
+          <span id="enemyName">—</span>
+          <span>Nv50</span>
+        </div>
+        <div class="hp-classic"><div class="hp-classic-fill high" id="enemyHpBar" style="width:100%"></div></div>
+        <div style="font-size:7px;margin-top:2px;text-align:right;color:#555" id="enemyHpText">100/100</div>
+      </div>
+
+      <img class="sprite-enemy" id="enemySprite" src="" alt="">
+      <img class="sprite-player" id="playerSprite" src="" alt="">
+
+      <div class="player-info">
+        <div class="name-row">
+          <span id="playerName">—</span>
+          <span>Nv50</span>
+        </div>
+        <div class="hp-classic"><div class="hp-classic-fill high" id="playerHpBar" style="width:100%"></div></div>
+        <div style="font-size:7px;margin-top:2px;text-align:right;color:#555" id="playerHpText">100/100</div>
+      </div>
+
+      <div class="message-box" id="msgBox">¡El combate comienza!</div>
+
+      <div class="command-menu" id="cmdMenu">
+        <button class="cmd-btn selected" data-cmd="0" onclick="openMoves()">Luchar</button>
+        <button class="cmd-btn" data-cmd="1" onclick="openParty()">Pokémon</button>
+        <button class="cmd-btn" data-cmd="2" onclick="showTypeChart()">Tipos</button>
+        <button class="cmd-btn" data-cmd="3" onclick="forfeit()">Huir</button>
+      </div>
+
+      <div class="moves-menu" id="movesMenu"></div>
+      <div class="party-menu" id="partyMenu"></div>
+    </div>
+
+    <div class="battle-controls">
+      <button class="btn btn-outline btn-sm" onclick="showMenu()">Menú</button>
+      <button class="music-btn" id="musicToggle" onclick="toggleMusic()">🔇 Música</button>
+      <button class="music-btn" onclick="document.getElementById('musicFile').click()">📁 MP3</button>
+      <input type="file" id="musicFile" accept="audio/*,.mp3,.ogg,.wav,.m4a" style="display:none" onchange="loadMusicFile(this)">
+      <label class="music-btn" style="display:flex;align-items:center;gap:6px;cursor:default">
+        Vol
+        <input type="range" id="battleVol" min="0" max="100" value="15" style="width:90px" oninput="setBattleVolume(this.value)">
+      </label>
+      <span style="font-size:11px;color:#888">↑↓←→ + Enter</span>
+    </div>
+  </div>
+</div>
+
+
+<!-- SPRITE SETUP (sin combate) -->
+<div id="screen-setup" class="screen">
+  <div class="battle-wrap" style="padding-top:12px">
+    <h2 style="text-align:center;margin-bottom:8px;font-size:18px">🔧 Ajustar posición de Pokémon</h2>
+    <p style="text-align:center;color:#999;font-size:13px;margin-bottom:10px">Sin combate ni temporizador · Cambia y guarda cada uno</p>
+
+    <div style="display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-bottom:10px;width:100%;max-width:880px">
+      <label style="font-size:13px">Tu lado:
+        <select id="setupPlayerSel" onchange="setupRefreshPreview()" style="padding:6px;border-radius:8px;background:#222;color:#fff;border:2px solid #555"></select>
+      </label>
+      <label style="font-size:13px">Rival:
+        <select id="setupEnemySel" onchange="setupRefreshPreview()" style="padding:6px;border-radius:8px;background:#222;color:#fff;border:2px solid #555"></select>
+      </label>
+    </div>
+
+    <div class="battle-field" id="setupField" style="max-width:880px">
+      <img class="sprite-enemy" id="setupEnemySprite" src="" alt="">
+      <img class="sprite-player" id="setupPlayerSprite" src="" alt="">
+      <div class="message-box" style="font-size:9px">Vista previa · Usa los controles de abajo o el panel Admin</div>
+    </div>
+
+    <div style="width:100%;max-width:880px;margin-top:12px;background:#1a1a1a;border:2px solid #e53935;border-radius:12px;padding:12px 14px">
+      <p style="color:#ffd600;font-weight:800;margin-bottom:6px;font-size:13px">Ajuste individual (no afecta a todos)</p>
+      <p style="font-size:11px;color:#888;margin-bottom:10px">1) Elige lado · 2) Elige Pokémon · 3) Mueve barras · 4) Guardar. Tu lado y rival son independientes.</p>
+
+      <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">
+        <button type="button" id="setupSidePlayer" class="btn btn-sm" onclick="setupSetSide('player')" style="flex:1">👤 Tu lado</button>
+        <button type="button" id="setupSideEnemy" class="btn btn-outline btn-sm" onclick="setupSetSide('enemy')" style="flex:1">👾 Rival</button>
+      </div>
+
+      <label style="font-size:12px;color:#bbb">Pokémon a editar en este lado
+        <select id="setupEditSel" onchange="setupOnEditMonChange()" style="width:100%;padding:6px;margin-top:4px;border-radius:8px;background:#111;color:#fff;border:2px solid #555"></select>
+      </label>
+      <label style="display:block;margin-top:8px;font-size:12px;color:#bbb">Tamaño extra: <span id="setupSizeL">0</span>
+        <input type="range" id="setupSize" min="-80" max="120" value="0" style="width:100%" oninput="setupApplyEdit()">
+      </label>
+      <label style="display:block;margin-top:6px;font-size:12px;color:#bbb">Horizontal: <span id="setupXL">0</span>
+        <input type="range" id="setupX" min="-30" max="30" value="0" style="width:100%" oninput="setupApplyEdit()">
+      </label>
+      <label style="display:block;margin-top:6px;font-size:12px;color:#bbb">Vertical: <span id="setupYL">0</span>
+        <input type="range" id="setupY" min="-30" max="30" value="0" style="width:100%" oninput="setupApplyEdit()">
+      </label>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px">
+        <button class="btn btn-sm" onclick="setupSave()">💾 Guardar este</button>
+        <button class="btn btn-outline btn-sm" onclick="exportSpriteSettings()">📋 Exportar todos</button>
+        <button class="btn btn-outline btn-sm" onclick="setupResetCurrent()">↩ Reset este</button>
+        <button class="btn btn-outline btn-sm" onclick="openAdmin()">⚙ Base global</button>
+        <button class="btn btn-outline btn-sm" onclick="showMenu()">← Menú</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- RESULT -->
+<div id="screen-result" class="screen">
+  <div class="result" id="resultBox">
+    <h1 id="resultTitle">¡Victoria!</h1>
+    <p id="resultMsg" style="max-width:400px;line-height:1.5;margin-bottom:22px;color:#eee"></p>
+    <button class="btn" onclick="startTeamSelect()">Otro combate</button>
+    <button class="btn btn-outline" style="margin-left:8px" onclick="showMenu()">Menú</button>
+  </div>
+</div>
+
+<!-- TYPE CHART -->
+<div class="typechart-modal" id="typeModal" onclick="if(event.target===this)hideTypeChart()">
+  <div class="typechart-box">
+    <h3>Tabla de Tipos</h3>
+    <p style="margin-bottom:8px;font-size:11px;color:#999">2 = Muy efectivo · ½ = Poco efectivo · 0 = Inmune</p>
+    <div id="typeChartContent"></div>
+    <button class="btn btn-sm" style="margin-top:12px" onclick="hideTypeChart()">Cerrar</button>
+  </div>
+</div>
+
+
+<div class="admin-overlay" id="adminOverlay" onclick="closeAdmin()"></div>
+<div class="admin-panel" id="adminPanel">
+  <h3>⚙ Admin (solo tú)</h3>
+
+  <label>Volumen música: <span id="admVolLabel">40</span>%</label>
+  <input type="range" id="admVol" min="0" max="100" value="40" oninput="adminApplyLive()">
+
+  <label>Volumen efectos: <span id="admSfxLabel">100</span>%</label>
+  <input type="range" id="admSfx" min="0" max="100" value="100" oninput="adminApplyLive()">
+
+  <hr style="border-color:#333;margin:12px 0">
+  <p style="color:#e53935;font-weight:800;margin-bottom:6px">Posición base (todos)</p>
+
+  <label>Jugador base — izq %: <span id="admPLeftL">5</span></label>
+  <input type="range" id="admPLeft" min="0" max="40" value="5" oninput="adminApplyLive()">
+
+  <label>Jugador base — abajo %: <span id="admPBottomL">11</span></label>
+  <input type="range" id="admPBottom" min="0" max="40" value="11" oninput="adminApplyLive()">
+
+  <label>Jugador base — tamaño: <span id="admPSizeL">210</span></label>
+  <input type="range" id="admPSize" min="80" max="320" value="210" oninput="adminApplyLive()">
+
+  <label>Rival base — der %: <span id="admERightL">18</span></label>
+  <input type="range" id="admERight" min="0" max="40" value="18" oninput="adminApplyLive()">
+
+  <label>Rival base — arriba %: <span id="admETopL">32</span></label>
+  <input type="range" id="admETop" min="5" max="55" value="32" oninput="adminApplyLive()">
+
+  <label>Rival base — tamaño: <span id="admESizeL">150</span></label>
+  <input type="range" id="admESize" min="60" max="280" value="150" oninput="adminApplyLive()">
+
+  <hr style="border-color:#333;margin:12px 0">
+  <p style="color:#ffd600;font-weight:800;margin-bottom:6px">Ajuste por Pokémon</p>
+  <p style="font-size:11px;color:#888;margin-bottom:8px">Elige un Pokémon y corrige su tamaño/posición. Se suma a la base.</p>
+
+  <label>Pokémon a editar</label>
+  <select id="admMonSelect" onchange="adminLoadMon()" style="width:100%;padding:8px;border-radius:8px;background:#111;color:#fff;border:2px solid #555;margin-bottom:8px"></select>
+
+  <label>Extra tamaño (px): <span id="admMonSizeL">0</span></label>
+  <input type="range" id="admMonSize" min="-80" max="120" value="0" oninput="adminApplyLive()">
+
+  <label>Extra horizontal: <span id="admMonXL">0</span></label>
+  <input type="range" id="admMonX" min="-30" max="30" value="0" oninput="adminApplyLive()">
+
+  <label>Extra vertical: <span id="admMonYL">0</span></label>
+  <input type="range" id="admMonY" min="-30" max="30" value="0" oninput="adminApplyLive()">
+
+  <div class="admin-actions">
+    <button class="primary" onclick="adminSave()">💾 Guardar</button>
+    <button onclick="adminResetMon()">↩ Reset este</button>
+    <button onclick="adminReset()">↩ Todo default</button>
+    <button onclick="document.getElementById('musicFile').click()">📁 MP3</button>
+    <button onclick="closeAdmin()">Cerrar</button>
+  </div>
+  <p class="admin-hint">Ctrl+Shift+A · Guarda en este navegador. Si me pasas los números, los dejo fijos en el HTML.</p>
+</div>
+
+<div class="footer">Tutorial · Sprites animados Gen 5 · Música royalty-free (Yuki Nozawa)</div>
+
+<script>
+const TYPE_ES = {normal:"Normal",fire:"Fuego",water:"Agua",electric:"Eléctrico",grass:"Planta",ice:"Hielo",fighting:"Lucha",poison:"Veneno",ground:"Tierra",flying:"Volador",psychic:"Psíquico",bug:"Bicho",rock:"Roca",ghost:"Fantasma",dragon:"Dragón",dark:"Siniestro",steel:"Acero",fairy:"Hada"};
+const TYPE_CLASS = {normal:"normal",fire:"fuego",water:"agua",electric:"eléctrico",grass:"planta",ice:"hielo",fighting:"lucha",poison:"veneno",ground:"tierra",flying:"volador",psychic:"psíquico",bug:"bicho",rock:"roca",ghost:"fantasma",dragon:"dragón",dark:"siniestro",steel:"acero",fairy:"hada"};
+const TYPE_CHART = {
+  normal:{rock:.5,ghost:0,steel:.5},fire:{fire:.5,water:.5,grass:2,ice:2,bug:2,rock:.5,dragon:.5,steel:2},
+  water:{fire:2,water:.5,grass:.5,ground:2,rock:2,dragon:.5},electric:{water:2,electric:.5,grass:.5,ground:0,flying:2,dragon:.5},
+  grass:{fire:.5,water:2,grass:.5,poison:.5,ground:2,flying:.5,bug:.5,rock:2,dragon:.5,steel:.5},
+  ice:{fire:.5,water:.5,grass:2,ice:.5,ground:2,flying:2,dragon:2,steel:.5},
+  fighting:{normal:2,ice:2,poison:.5,flying:.5,psychic:.5,bug:.5,rock:2,ghost:0,dark:2,steel:2,fairy:.5},
+  poison:{grass:2,poison:.5,ground:.5,rock:.5,ghost:.5,steel:0,fairy:2},
+  ground:{fire:2,electric:2,grass:.5,poison:2,flying:0,bug:.5,rock:2,steel:2},
+  flying:{electric:.5,grass:2,fighting:2,bug:2,rock:.5,steel:.5},
+  psychic:{fighting:2,poison:2,psychic:.5,dark:0,steel:.5},
+  bug:{fire:.5,grass:2,fighting:.5,poison:.5,flying:.5,psychic:2,ghost:.5,dark:2,steel:.5,fairy:.5},
+  rock:{fire:2,ice:2,fighting:.5,ground:.5,flying:2,bug:2,steel:.5},
+  ghost:{normal:0,psychic:2,ghost:2,dark:.5},
+  dragon:{dragon:2,steel:.5,fairy:0},
+  dark:{fighting:.5,psychic:2,ghost:2,dark:.5,fairy:.5},
+  steel:{fire:.5,water:.5,electric:.5,ice:2,rock:2,steel:.5,fairy:2},
+  fairy:{fire:.5,fighting:2,poison:.5,dragon:2,dark:2,steel:.5}
+};
+
+// Animated Gen 5 sprites + static fallback
+const anim = (id) => ({
+  front: `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/versions/generation-v/black-white/animated/${id}.gif`,
+  back: `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/versions/generation-v/black-white/animated/back/${id}.gif`,
+  frontStatic: `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png`,
+  backStatic: `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/back/${id}.png`
+});
+
+const POKEMON = {
+  venusaur:{name:"Venusaur",types:["grass","poison"],stats:{hp:80,atk:82,def:83,spa:100,spd:100,spe:80},...anim(3),
+    moves:[{name:"Gigadrenado",type:"grass",cat:"special",power:75,acc:100,effect:"Cura 50% del daño."},{name:"Bomba Lodo",type:"poison",cat:"special",power:90,acc:100,effect:"30% envenenar."},{name:"Terremoto",type:"ground",cat:"physical",power:100,acc:100,effect:"Potente físico."},{name:"Día Soleado",type:"fire",cat:"status",power:0,acc:100,effect:"Clima: Sol.",weather:"sun"}]},
+  charizard:{name:"Charizard",types:["fire","flying"],stats:{hp:78,atk:84,def:78,spa:109,spd:85,spe:100},...anim(6),
+    moves:[{name:"Lanzallamas",type:"fire",cat:"special",power:90,acc:100,effect:"10% quemar."},{name:"Tajo Aéreo",type:"flying",cat:"special",power:75,acc:95,effect:"30% retroceder."},{name:"Garra Dragón",type:"dragon",cat:"physical",power:80,acc:100,effect:"Físico Dragón."},{name:"Día Soleado",type:"fire",cat:"status",power:0,acc:100,effect:"Clima: Sol.",weather:"sun"}]},
+  blastoise:{name:"Blastoise",types:["water"],stats:{hp:79,atk:83,def:100,spa:85,spd:105,spe:78},...anim(9),
+    moves:[{name:"Hidrobomba",type:"water",cat:"special",power:110,acc:80,effect:"Potente Agua."},{name:"Rayo Hielo",type:"ice",cat:"special",power:90,acc:100,effect:"10% congelar."},{name:"Terremoto",type:"ground",cat:"physical",power:100,acc:100,effect:"Potente físico."},{name:"Danza Lluvia",type:"water",cat:"status",power:0,acc:100,effect:"Clima: Lluvia.",weather:"rain"}]},
+  pikachu:{name:"Pikachu",types:["electric"],stats:{hp:35,atk:55,def:40,spa:50,spd:50,spe:90},...anim(25),
+    moves:[{name:"Rayo",type:"electric",cat:"special",power:90,acc:100,effect:"10% paralizar."},{name:"Cola Férrea",type:"steel",cat:"physical",power:100,acc:75,effect:"30% bajar Def."},{name:"Ataque Rápido",type:"normal",cat:"physical",power:40,acc:100,effect:"Prioridad +1."},{name:"Maquinación",type:"dark",cat:"status",power:0,acc:100,effect:"At.Esp +2."}]},
+  gyarados:{name:"Gyarados",types:["water","flying"],stats:{hp:95,atk:125,def:79,spa:60,spd:100,spe:81},...anim(130),
+    moves:[{name:"Cascada",type:"water",cat:"physical",power:80,acc:100,effect:"20% retroceder."},{name:"Terremoto",type:"ground",cat:"physical",power:100,acc:100,effect:"Potente físico."},{name:"Colmillo Hielo",type:"ice",cat:"physical",power:65,acc:95,effect:"10% congelar."},{name:"Danza Dragón",type:"dragon",cat:"status",power:0,acc:100,effect:"Atk y Vel +1."}]},
+  gengar:{name:"Gengar",types:["ghost","poison"],stats:{hp:60,atk:65,def:60,spa:130,spd:75,spe:110},...anim(94),
+    moves:[{name:"Bola Sombra",type:"ghost",cat:"special",power:80,acc:100,effect:"20% bajar Def.Esp."},{name:"Bomba Lodo",type:"poison",cat:"special",power:90,acc:100,effect:"30% envenenar."},{name:"Rayo",type:"electric",cat:"special",power:90,acc:100,effect:"10% paralizar."},{name:"Fuego Fatuo",type:"fire",cat:"status",power:0,acc:85,effect:"Quema al rival."}]},
+  snorlax:{name:"Snorlax",types:["normal"],stats:{hp:160,atk:110,def:65,spa:65,spd:110,spe:30},...anim(143),
+    moves:[{name:"Golpe Cuerpo",type:"normal",cat:"physical",power:85,acc:100,effect:"30% paralizar."},{name:"Terremoto",type:"ground",cat:"physical",power:100,acc:100,effect:"Potente físico."},{name:"Triturar",type:"dark",cat:"physical",power:80,acc:100,effect:"20% bajar Def."},{name:"Descanso",type:"psychic",cat:"status",power:0,acc:100,effect:"Cura todos los PS."}]},
+  dragonite:{name:"Dragonite",types:["dragon","flying"],stats:{hp:91,atk:134,def:95,spa:100,spd:100,spe:80},...anim(149),
+    moves:[{name:"Enfado",type:"dragon",cat:"physical",power:120,acc:100,effect:"Ataca 2-3 turnos."},{name:"Terremoto",type:"ground",cat:"physical",power:100,acc:100,effect:"Potente físico."},{name:"Puño Fuego",type:"fire",cat:"physical",power:75,acc:100,effect:"10% quemar."},{name:"Danza Dragón",type:"dragon",cat:"status",power:0,acc:100,effect:"Atk y Vel +1."}]},
+  lucario:{name:"Lucario",types:["fighting","steel"],stats:{hp:70,atk:110,def:70,spa:115,spd:70,spe:90},...anim(448),
+    moves:[{name:"Esfera Aural",type:"fighting",cat:"special",power:80,acc:100,effect:"Nunca falla."},{name:"Foco Resplandor",type:"steel",cat:"special",power:80,acc:100,effect:"10% bajar Def.Esp."},{name:"A Bocajarro",type:"fighting",cat:"physical",power:120,acc:100,effect:"Baja Def y Def.Esp."},{name:"Danza Espada",type:"normal",cat:"status",power:0,acc:100,effect:"Atk +2."}]},
+  garchomp:{name:"Garchomp",types:["dragon","ground"],stats:{hp:108,atk:130,def:95,spa:80,spd:85,spe:102},...anim(445),
+    moves:[{name:"Terremoto",type:"ground",cat:"physical",power:100,acc:100,effect:"Potente físico."},{name:"Garra Dragón",type:"dragon",cat:"physical",power:80,acc:100,effect:"Físico Dragón."},{name:"Roca Afilada",type:"rock",cat:"physical",power:100,acc:80,effect:"Alto crítico."},{name:"Tormenta Arena",type:"rock",cat:"status",power:0,acc:100,effect:"Clima: Tormenta Arena.",weather:"sand"}]},
+  alakazam:{name:"Alakazam",types:["psychic"],stats:{hp:55,atk:50,def:45,spa:135,spd:95,spe:120},...anim(65),
+    moves:[{name:"Psíquico",type:"psychic",cat:"special",power:90,acc:100,effect:"10% bajar Def.Esp."},{name:"Bola Sombra",type:"ghost",cat:"special",power:80,acc:100,effect:"20% bajar Def.Esp."},{name:"Onda Certera",type:"fighting",cat:"special",power:120,acc:70,effect:"10% bajar Def.Esp."},{name:"Mente Tranquila",type:"psychic",cat:"status",power:0,acc:100,effect:"At.Esp y Def.Esp +1."}]},
+  tyranitar:{name:"Tyranitar",types:["rock","dark"],stats:{hp:100,atk:134,def:110,spa:95,spd:100,spe:61},...anim(248),
+    moves:[{name:"Roca Afilada",type:"rock",cat:"physical",power:100,acc:80,effect:"Alto crítico."},{name:"Triturar",type:"dark",cat:"physical",power:80,acc:100,effect:"20% bajar Def."},{name:"Terremoto",type:"ground",cat:"physical",power:100,acc:100,effect:"Potente físico."},{name:"Tormenta Arena",type:"rock",cat:"status",power:0,acc:100,effect:"Clima: Tormenta Arena.",weather:"sand"}]},
+  milotic:{name:"Milotic",types:["water"],stats:{hp:95,atk:60,def:79,spa:100,spd:125,spe:81},...anim(350),
+    moves:[{name:"Surf",type:"water",cat:"special",power:90,acc:100,effect:"Ataque de Agua."},{name:"Rayo Hielo",type:"ice",cat:"special",power:90,acc:100,effect:"10% congelar."},{name:"Recuperación",type:"normal",cat:"status",power:0,acc:100,effect:"Cura 50% PS."},{name:"Danza Lluvia",type:"water",cat:"status",power:0,acc:100,effect:"Clima: Lluvia.",weather:"rain"}]},
+  scizor:{name:"Scizor",types:["bug","steel"],stats:{hp:70,atk:130,def:100,spa:55,spd:80,spe:65},...anim(212),
+    moves:[{name:"Puño Bala",type:"steel",cat:"physical",power:40,acc:100,effect:"Prioridad +1."},{name:"Ida y Vuelta",type:"bug",cat:"physical",power:70,acc:100,effect:"Golpea y cambia."},{name:"Superpoder",type:"fighting",cat:"physical",power:120,acc:100,effect:"Baja Atk y Def."},{name:"Danza Espada",type:"normal",cat:"status",power:0,acc:100,effect:"Atk +2."}]},
+  togekiss:{name:"Togekiss",types:["fairy","flying"],stats:{hp:85,atk:50,def:95,spa:120,spd:115,spe:80},...anim(468),
+    moves:[{name:"Tajo Aéreo",type:"flying",cat:"special",power:75,acc:95,effect:"30% retroceder."},{name:"Brillo Mágico",type:"fairy",cat:"special",power:80,acc:100,effect:"Ataque Hada."},{name:"Esfera Aural",type:"fighting",cat:"special",power:80,acc:100,effect:"Nunca falla."},{name:"Maquinación",type:"dark",cat:"status",power:0,acc:100,effect:"At.Esp +2."}]},
+  electivire:{name:"Electivire",types:["electric"],stats:{hp:75,atk:123,def:67,spa:95,spd:85,spe:95},...anim(466),
+    moves:[{name:"Puño Trueno",type:"electric",cat:"physical",power:75,acc:100,effect:"10% paralizar."},{name:"Puño Hielo",type:"ice",cat:"physical",power:75,acc:100,effect:"10% congelar."},{name:"Terremoto",type:"ground",cat:"physical",power:100,acc:100,effect:"Potente físico."},{name:"Tajo Cruzado",type:"fighting",cat:"physical",power:100,acc:80,effect:"Alto crítico."}]},
+  butterfree:{name:"Butterfree",types:["bug","flying"],stats:{hp:60,atk:45,def:50,spa:90,spd:80,spe:70},...anim(12),
+    moves:[{name:"Zumbido",type:"bug",cat:"special",power:90,acc:100,effect:"10% bajar Def.Esp."},{name:"Tajo Aéreo",type:"flying",cat:"special",power:75,acc:95,effect:"30% retroceder."},{name:"Psíquico",type:"psychic",cat:"special",power:90,acc:100,effect:"10% bajar Def.Esp."},{name:"Somnífero",type:"grass",cat:"status",power:0,acc:75,effect:"Duerme al rival."}]},
+  rhydon:{name:"Rhydon",types:["ground","rock"],stats:{hp:105,atk:130,def:120,spa:45,spd:45,spe:40},...anim(112),
+    moves:[{name:"Terremoto",type:"ground",cat:"physical",power:100,acc:100,effect:"Potente físico."},{name:"Roca Afilada",type:"rock",cat:"physical",power:100,acc:80,effect:"Alto crítico."},{name:"Megacuerno",type:"bug",cat:"physical",power:120,acc:85,effect:"Potente Bicho."},{name:"Tormenta Arena",type:"rock",cat:"status",power:0,acc:100,effect:"Clima: Tormenta Arena.",weather:"sand"}]},
+  arcanine:{name:"Arcanine",types:["fire"],stats:{hp:90,atk:110,def:80,spa:100,spd:80,spe:95},...anim(59),
+    moves:[{name:"Envite Ígneo",type:"fire",cat:"physical",power:120,acc:100,effect:"Recibe 33% daño."},{name:"Velocidad Extrema",type:"normal",cat:"physical",power:80,acc:100,effect:"Prioridad +2."},{name:"Voltio Cruel",type:"electric",cat:"physical",power:90,acc:100,effect:"Daño de retroceso."},{name:"Día Soleado",type:"fire",cat:"status",power:0,acc:100,effect:"Clima: Sol.",weather:"sun"}]},
+  jolteon:{name:"Jolteon",types:["electric"],stats:{hp:65,atk:65,def:60,spa:110,spd:95,spe:130},...anim(135),
+    moves:[{name:"Rayo",type:"electric",cat:"special",power:90,acc:100,effect:"10% paralizar."},{name:"Bola Sombra",type:"ghost",cat:"special",power:80,acc:100,effect:"20% bajar Def.Esp."},{name:"Rayo Señal",type:"bug",cat:"special",power:75,acc:100,effect:"10% confundir."},{name:"Onda Trueno",type:"electric",cat:"status",power:0,acc:90,effect:"Paraliza."}]},
+  vaporeon:{name:"Vaporeon",types:["water"],stats:{hp:130,atk:65,def:60,spa:110,spd:95,spe:65},...anim(134),
+    moves:[{name:"Surf",type:"water",cat:"special",power:90,acc:100,effect:"Ataque de Agua."},{name:"Rayo Hielo",type:"ice",cat:"special",power:90,acc:100,effect:"10% congelar."},{name:"Armadura Ácida",type:"poison",cat:"status",power:0,acc:100,effect:"Def +2."},{name:"Danza Lluvia",type:"water",cat:"status",power:0,acc:100,effect:"Clima: Lluvia.",weather:"rain"}]},
+  flareon:{name:"Flareon",types:["fire"],stats:{hp:65,atk:130,def:60,spa:95,spd:110,spe:65},...anim(136),
+    moves:[{name:"Envite Ígneo",type:"fire",cat:"physical",power:120,acc:100,effect:"Recibe 33% daño."},{name:"Superpoder",type:"fighting",cat:"physical",power:120,acc:100,effect:"Baja Atk y Def."},{name:"Ataque Rápido",type:"normal",cat:"physical",power:40,acc:100,effect:"Prioridad +1."},{name:"Día Soleado",type:"fire",cat:"status",power:0,acc:100,effect:"Clima: Sol.",weather:"sun"}]}
+,
+  raichu:{name:"Raichu",types:["electric"],stats:{hp:60,atk:90,def:55,spa:90,spd:80,spe:110},
+    front:"https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/versions/generation-v/black-white/animated/26.gif",
+    back:"https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/versions/generation-v/black-white/animated/back/26.gif",
+    frontStatic:"https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/26.png",
+    backStatic:"https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/back/26.png",
+    moves:[{name:"Rayo",type:"electric",cat:"special",power:90,acc:100,effect:"10% paralizar."},{name:"Puño Trueno",type:"electric",cat:"physical",power:75,acc:100,effect:"10% paralizar."},{name:"Surf",type:"water",cat:"special",power:90,acc:100,effect:"Ataque Agua."},{name:"Onda Trueno",type:"electric",cat:"status",power:0,acc:90,effect:"Paraliza."}]},
+  machamp:{name:"Machamp",types:["fighting"],stats:{hp:90,atk:130,def:80,spa:65,spd:85,spe:55},
+    front:"https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/versions/generation-v/black-white/animated/68.gif",
+    back:"https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/versions/generation-v/black-white/animated/back/68.gif",
+    frontStatic:"https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/68.png",
+    backStatic:"https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/back/68.png",
+    moves:[{name:"A Bocajarro",type:"fighting",cat:"physical",power:120,acc:100,effect:"Baja Def y Def.Esp."},{name:"Tajo Cruzado",type:"fighting",cat:"physical",power:100,acc:80,effect:"Alto crítico."},{name:"Terremoto",type:"ground",cat:"physical",power:100,acc:100,effect:"Potente físico."},{name:"Danza Espada",type:"normal",cat:"status",power:0,acc:100,effect:"Atk +2."}]},
+  lapras:{name:"Lapras",types:["water","ice"],stats:{hp:130,atk:85,def:80,spa:85,spd:95,spe:60},
+    front:"https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/versions/generation-v/black-white/animated/131.gif",
+    back:"https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/versions/generation-v/black-white/animated/back/131.gif",
+    frontStatic:"https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/131.png",
+    backStatic:"https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/back/131.png",
+    moves:[{name:"Surf",type:"water",cat:"special",power:90,acc:100,effect:"Ataque Agua."},{name:"Rayo Hielo",type:"ice",cat:"special",power:90,acc:100,effect:"10% congelar."},{name:"Psíquico",type:"psychic",cat:"special",power:90,acc:100,effect:"10% bajar Def.Esp."},{name:"Danza Lluvia",type:"water",cat:"status",power:0,acc:100,effect:"Clima: Lluvia.",weather:"rain"}]},
+  umbreon:{name:"Umbreon",types:["dark"],stats:{hp:95,atk:65,def:110,spa:60,spd:130,spe:65},
+    front:"https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/versions/generation-v/black-white/animated/197.gif",
+    back:"https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/versions/generation-v/black-white/animated/back/197.gif",
+    frontStatic:"https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/197.png",
+    backStatic:"https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/back/197.png",
+    moves:[{name:"Triturar",type:"dark",cat:"physical",power:80,acc:100,effect:"20% bajar Def."},{name:"Bola Sombra",type:"ghost",cat:"special",power:80,acc:100,effect:"20% bajar Def.Esp."},{name:"Tóxico",type:"poison",cat:"status",power:0,acc:90,effect:"Envenena gravemente."},{name:"Luna Llena",type:"fairy",cat:"status",power:0,acc:100,effect:"Cura 50% PS."}]},
+  espeon:{name:"Espeon",types:["psychic"],stats:{hp:65,atk:65,def:60,spa:130,spd:95,spe:110},
+    front:"https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/versions/generation-v/black-white/animated/196.gif",
+    back:"https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/versions/generation-v/black-white/animated/back/196.gif",
+    frontStatic:"https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/196.png",
+    backStatic:"https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/back/196.png",
+    moves:[{name:"Psíquico",type:"psychic",cat:"special",power:90,acc:100,effect:"10% bajar Def.Esp."},{name:"Bola Sombra",type:"ghost",cat:"special",power:80,acc:100,effect:"20% bajar Def.Esp."},{name:"Rayo Señal",type:"bug",cat:"special",power:75,acc:100,effect:"10% confundir."},{name:"Mañana Soleada",type:"normal",cat:"status",power:0,acc:100,effect:"Cura 50% PS."}]},
+  sceptile:{name:"Sceptile",types:["grass"],stats:{hp:70,atk:85,def:65,spa:105,spd:85,spe:120},
+    front:"https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/versions/generation-v/black-white/animated/254.gif",
+    back:"https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/versions/generation-v/black-white/animated/back/254.gif",
+    frontStatic:"https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/254.png",
+    backStatic:"https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/back/254.png",
+    moves:[{name:"Hoja Aguda",type:"grass",cat:"physical",power:90,acc:100,effect:"Alto crítico."},{name:"Garra Dragón",type:"dragon",cat:"physical",power:80,acc:100,effect:"Físico Dragón."},{name:"Terremoto",type:"ground",cat:"physical",power:100,acc:100,effect:"Potente físico."},{name:"Danza Espada",type:"normal",cat:"status",power:0,acc:100,effect:"Atk +2."}]},
+  blaziken:{name:"Blaziken",types:["fire","fighting"],stats:{hp:80,atk:120,def:70,spa:110,spd:70,spe:80},
+    front:"https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/versions/generation-v/black-white/animated/257.gif",
+    back:"https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/versions/generation-v/black-white/animated/back/257.gif",
+    frontStatic:"https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/257.png",
+    backStatic:"https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/back/257.png",
+    moves:[{name:"Envite Ígneo",type:"fire",cat:"physical",power:120,acc:100,effect:"Recibe 33% daño."},{name:"Patada Salto Alta",type:"fighting",cat:"physical",power:130,acc:90,effect:"Si falla, recibe daño."},{name:"Tajo Aéreo",type:"flying",cat:"special",power:75,acc:95,effect:"30% retroceder."},{name:"Danza Espada",type:"normal",cat:"status",power:0,acc:100,effect:"Atk +2."}]},
+  swampert:{name:"Swampert",types:["water","ground"],stats:{hp:100,atk:110,def:90,spa:85,spd:90,spe:60},
+    front:"https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/versions/generation-v/black-white/animated/260.gif",
+    back:"https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/versions/generation-v/black-white/animated/back/260.gif",
+    frontStatic:"https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/260.png",
+    backStatic:"https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/back/260.png",
+    moves:[{name:"Cascada",type:"water",cat:"physical",power:80,acc:100,effect:"20% retroceder."},{name:"Terremoto",type:"ground",cat:"physical",power:100,acc:100,effect:"Potente físico."},{name:"Rayo Hielo",type:"ice",cat:"special",power:90,acc:100,effect:"10% congelar."},{name:"Danza Lluvia",type:"water",cat:"status",power:0,acc:100,effect:"Clima: Lluvia.",weather:"rain"}]},
+  gardevoir:{name:"Gardevoir",types:["psychic","fairy"],stats:{hp:68,atk:65,def:65,spa:125,spd:115,spe:80},
+    front:"https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/versions/generation-v/black-white/animated/282.gif",
+    back:"https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/versions/generation-v/black-white/animated/back/282.gif",
+    frontStatic:"https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/282.png",
+    backStatic:"https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/back/282.png",
+    moves:[{name:"Psíquico",type:"psychic",cat:"special",power:90,acc:100,effect:"10% bajar Def.Esp."},{name:"Brillo Mágico",type:"fairy",cat:"special",power:80,acc:100,effect:"Ataque Hada."},{name:"Bola Sombra",type:"ghost",cat:"special",power:80,acc:100,effect:"20% bajar Def.Esp."},{name:"Mente Tranquila",type:"psychic",cat:"status",power:0,acc:100,effect:"At.Esp y Def.Esp +1."}]},
+  metagross:{name:"Metagross",types:["steel","psychic"],stats:{hp:80,atk:135,def:130,spa:95,spd:90,spe:70},
+    front:"https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/versions/generation-v/black-white/animated/376.gif",
+    back:"https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/versions/generation-v/black-white/animated/back/376.gif",
+    frontStatic:"https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/376.png",
+    backStatic:"https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/back/376.png",
+    moves:[{name:"Puño Meteoro",type:"steel",cat:"physical",power:90,acc:90,effect:"20% subir Atk."},{name:"Psíquico",type:"psychic",cat:"special",power:90,acc:100,effect:"10% bajar Def.Esp."},{name:"Terremoto",type:"ground",cat:"physical",power:100,acc:100,effect:"Potente físico."},{name:"Agilidad",type:"psychic",cat:"status",power:0,acc:100,effect:"Vel +2."}]},
+};
+
+let selected=[], playerTeam=[], enemyTeam=[];
+let playerActive=0, enemyActive=0;
+let battleOver=false, isPlayerTurn=true;
+let weather=null, weatherTurns=0;
+let boosts={player:{atk:0,def:0,spa:0,spd:0,spe:0},enemy:{atk:0,def:0,spa:0,spd:0,spe:0}};
+let cmdIndex=0, moveIndex=0, moveMode=false, partyMode=false;
+let musicOn=false;
+
+function typeBadges(types){return types.map(t=>`<span class="type-badge type-${TYPE_CLASS[t]}">${TYPE_ES[t]}</span>`).join("");}
+function getMult(mt,defs){let m=1;for(const t of defs)m*=(TYPE_CHART[mt]?.[t]??1);return m;}
+function effText(m){if(m===0)return"No afecta";if(m>=2)return"¡Muy efectivo!";if(m<=.5)return"Poco efectivo";return"";}
+function calcDmg(att,def,move,aB=0,dB=0){
+  if(move.cat==="status"||!move.power)return 0;
+  const lv=50,phys=move.cat==="physical";
+  let A=phys?att.stats.atk:att.stats.spa, D=phys?def.stats.def:def.stats.spd;
+  A=Math.floor(A*(2+Math.max(0,aB))/(2+Math.max(0,-aB)));
+  D=Math.floor(D*(2+Math.max(0,dB))/(2+Math.max(0,-dB)));
+  let base=Math.floor(Math.floor(Math.floor(2*lv/5+2)*move.power*A/D)/50)+2;
+  if(att.types.includes(move.type))base=Math.floor(base*1.5);
+  if(weather==="sun"&&move.type==="fire")base=Math.floor(base*1.5);
+  if(weather==="sun"&&move.type==="water")base=Math.floor(base*.5);
+  if(weather==="rain"&&move.type==="water")base=Math.floor(base*1.5);
+  if(weather==="rain"&&move.type==="fire")base=Math.floor(base*.5);
+  base=Math.floor(base*getMult(move.type,def.types)*(0.85+Math.random()*0.15));
+  return Math.max(1,base);
+}
+
+
+// ===== Efectos de sonido (Web Audio API) =====
+let audioCtx = null;
+function getAudioCtx(){
+  if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if(audioCtx.state === "suspended") audioCtx.resume();
+  return audioCtx;
+}
+function playTone(freq, dur, type="square", vol=0.08, slideTo=null){
+  try {
+    const ctx = getAudioCtx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, ctx.currentTime);
+    if(slideTo != null) osc.frequency.linearRampToValueAtTime(slideTo, ctx.currentTime + dur);
+    gain.gain.setValueAtTime(vol * (typeof sfxVolume === 'number' ? sfxVolume : 1), ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur);
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.start(); osc.stop(ctx.currentTime + dur);
+  } catch(e){}
+}
+function sfxHit(){
+  // golpe corto
+  playTone(180, 0.08, "square", 0.1);
+  setTimeout(() => playTone(90, 0.12, "sawtooth", 0.07), 40);
+}
+function sfxSuperEffective(){
+  playTone(320, 0.1, "square", 0.1);
+  setTimeout(() => playTone(480, 0.12, "square", 0.09), 70);
+  setTimeout(() => playTone(640, 0.15, "square", 0.07), 140);
+}
+function sfxNotVery(){
+  playTone(200, 0.15, "triangle", 0.06, 100);
+}
+function sfxStatus(){
+  playTone(400, 0.08, "sine", 0.07);
+  setTimeout(() => playTone(500, 0.1, "sine", 0.06), 80);
+  setTimeout(() => playTone(600, 0.12, "sine", 0.05), 160);
+}
+function sfxFaint(){
+  playTone(300, 0.2, "sawtooth", 0.08, 80);
+  setTimeout(() => playTone(150, 0.35, "sawtooth", 0.06, 40), 150);
+}
+function sfxSelect(){
+  playTone(520, 0.05, "square", 0.05);
+}
+function sfxSwitch(){
+  playTone(300, 0.08, "square", 0.06);
+  setTimeout(() => playTone(450, 0.1, "square", 0.05), 90);
+}
+
+function playCry(id){
+  try {
+    const a = new Audio(`https://raw.githubusercontent.com/PokeAPI/cries/main/cries/latest/${id}.ogg`);
+    a.volume = 0.5 * (typeof sfxVolume === 'number' ? sfxVolume : 1);
+    a.play().catch(()=>{});
+  } catch(e){}
+}
+function getDexId(key){
+  const map = {venusaur:3,charizard:6,blastoise:9,pikachu:25,gyarados:130,gengar:94,snorlax:143,dragonite:149,lucario:448,garchomp:445,alakazam:65,tyranitar:248,milotic:350,scizor:212,togekiss:468,electivire:466,butterfree:12,rhydon:112,arcanine:59,jolteon:135,vaporeon:134,flareon:136,infernape:392,empoleon:395,torterra:389,gardevoir:282,metagross:376,salamence:373,raichu:26,machamp:68,golem:76,lapras:131,aerodactyl:142,umbreon:197,espeon:196,sceptile:254,blaziken:257,swampert:260};
+  return map[key] || 25;
+}
+function playAttackAnim(side){
+  const el = document.getElementById(side === "player" ? "playerSprite" : "enemySprite");
+  const other = document.getElementById(side === "player" ? "enemySprite" : "playerSprite");
+  if(!el) return;
+  el.classList.remove("attacking"); void el.offsetWidth;
+  el.classList.add("attacking");
+  setTimeout(() => {
+    el.classList.remove("attacking");
+    if(other){ other.classList.remove("hit"); void other.offsetWidth; other.classList.add("hit"); setTimeout(()=>other.classList.remove("hit"),400); }
+  }, 200);
+}
+
+let turnTimer = null;
+let turnSeconds = 45;
+function startTurnTimer(){
+  stopTurnTimer();
+  turnSeconds = 45;
+  const el = document.getElementById("turnTimer");
+  if(el){ el.style.display = "block"; el.textContent = turnSeconds + "s"; el.classList.remove("urgent"); }
+  turnTimer = setInterval(() => {
+    turnSeconds--;
+    if(el){
+      el.textContent = turnSeconds + "s";
+      if(turnSeconds <= 10) el.classList.add("urgent");
+    }
+    if(turnSeconds <= 0){
+      stopTurnTimer();
+      if(isPlayerTurn && !battleOver){
+        setMsg("¡Se acabó el tiempo! Usando el primer ataque...");
+        // auto first move if moves menu open, else open and use first
+        const opts = document.querySelectorAll(".move-option");
+        if(opts.length) doMove(0);
+        else {
+          openMoves();
+          setTimeout(() => { if(isPlayerTurn) doMove(0); }, 300);
+        }
+      }
+    }
+  }, 1000);
+}
+function stopTurnTimer(){
+  if(turnTimer){ clearInterval(turnTimer); turnTimer = null; }
+  const el = document.getElementById("turnTimer");
+  if(el) el.style.display = "none";
+}
+
+function showPokeballIntro(cb){
+  const intro = document.getElementById("pokeballIntro");
+  if(!intro){ if(cb) cb(); return; }
+  intro.classList.add("active");
+  setTimeout(() => {
+    intro.classList.remove("active");
+    if(cb) cb();
+  }, 1100);
+}
+
+function createBattler(k){
+  const p=POKEMON[k];
+  const maxHp=p.stats.hp*2+110;
+  return{key:k,name:p.name,types:[...p.types],stats:{...p.stats},maxHp,hp:maxHp,moves:p.moves.map(m=>({...m})),
+    front:p.front,back:p.back,frontStatic:p.frontStatic,backStatic:p.backStatic,fainted:false};
+}
+
+function showScreen(id){document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));document.getElementById(id).classList.add("active");}
+function showMenu(){selected=[];battleOver=false;stopMusic();showScreen("screen-menu");}
+function showWelcome(){showScreen("screen-welcome");}
+
+function startTeamSelect(){
+  selected=[];
+  document.getElementById("pokeGrid").innerHTML=Object.keys(POKEMON).map(k=>{
+    const p=POKEMON[k];
+    return`<div class="poke-card" data-key="${k}" onclick="toggleSel('${k}')">
+      <img class="poke-sprite" src="${p.frontStatic}" alt="${p.name}" loading="lazy">
+      <div class="poke-name">${p.name}</div><div>${typeBadges(p.types)}</div></div>`;
+  }).join("");
+  updateSlots();
+  showScreen("screen-team");
+}
+function toggleSel(k){const i=selected.indexOf(k);if(i>=0)selected.splice(i,1);else if(selected.length<3)selected.push(k);updateSlots();}
+function updateSlots(){
+  for(let i=0;i<3;i++){
+    const s=document.getElementById("slot"+i);
+    if(selected[i]){s.classList.add("filled");s.innerHTML=`<img src="${POKEMON[selected[i]].frontStatic}">`;}
+    else{s.classList.remove("filled");s.innerHTML="";}
+  }
+  document.getElementById("selCount").textContent=selected.length;
+  document.getElementById("btnStart").disabled=selected.length!==3;
+  document.querySelectorAll(".poke-card").forEach(c=>c.classList.toggle("selected",selected.includes(c.dataset.key)));
+}
+
+function startBattle(){
+  playerTeam=selected.map(createBattler);
+  const pool=["butterfree","rhydon","arcanine","jolteon","vaporeon","flareon","pikachu","milotic","scizor","electivire","raichu","machamp","lapras","umbreon","espeon","sceptile","blaziken","swampert","gardevoir","metagross"];
+  enemyTeam=pool.sort(()=>Math.random()-.5).slice(0,3).map(createBattler);
+  enemyTeam.forEach(p=>{p.maxHp=Math.floor(p.maxHp*.85);p.hp=p.maxHp;});
+  playerActive=enemyActive=0;battleOver=false;isPlayerTurn=true;
+  weather=null;weatherTurns=0;
+  boosts={player:{atk:0,def:0,spa:0,spd:0,spe:0},enemy:{atk:0,def:0,spa:0,spd:0,spe:0}};
+  cmdIndex=0;moveMode=false;partyMode=false;
+  showScreen("screen-battle");
+  startMusic();
+  showPokeballIntro(() => {
+    updateBattleVisuals();
+    playCry(getDexId(playerTeam[0].key));
+    setTimeout(() => playCry(getDexId(enemyTeam[0].key)), 400);
+    setMsg("¡El combate comienza! Elige una acción.");
+    showCmd();
+  });
+}
+
+function setMsg(t){document.getElementById("msgBox").innerHTML=t;}
+function updateWeatherUI(){
+  const ov=document.getElementById("weatherOverlay"),bd=document.getElementById("weatherBadge");
+  ov.className="weather-overlay";bd.className="weather-badge";
+  if(!weather)return;
+  const map={sun:["weather-sun","☀️ Sol"],rain:["weather-rain","🌧️ Lluvia"],sand:["weather-sand","🏜️ Arena"]};
+  const[c,t]=map[weather]||[];
+  if(c){ov.classList.add("active",c);bd.classList.add("active");bd.textContent=t+" ("+weatherTurns+")";}
+}
+function applyWeatherDamage(){
+  if(weather!=="sand")return;
+  const dmg=p=>{if(!p.types.some(t=>["rock","ground","steel"].includes(t)))p.hp=Math.max(0,p.hp-Math.floor(p.maxHp/16));};
+  dmg(playerTeam[playerActive]);dmg(enemyTeam[enemyActive]);
+}
+function tickWeather(){if(weatherTurns>0){weatherTurns--;if(weatherTurns<=0){weather=null;setMsg("El clima se normalizó.");}}updateWeatherUI();}
+
+function setSprite(imgEl, url, fallback){
+  imgEl.onerror = () => { imgEl.onerror=null; imgEl.src=fallback; };
+  imgEl.src = url;
+}
+
+function updateBattleVisuals(){
+  const p=playerTeam[playerActive],e=enemyTeam[enemyActive];
+  applyAdminToDOM();
+  document.getElementById("playerName").textContent=p.name;
+  document.getElementById("enemyName").textContent=e.name;
+  setSprite(document.getElementById("playerSprite"), p.back, p.backStatic);
+  setSprite(document.getElementById("enemySprite"), e.front, e.frontStatic);
+  const pPct=Math.max(0,p.hp/p.maxHp*100),ePct=Math.max(0,e.hp/e.maxHp*100);
+  const pBar=document.getElementById("playerHpBar"),eBar=document.getElementById("enemyHpBar");
+  pBar.style.width=pPct+"%";eBar.style.width=ePct+"%";
+  pBar.className="hp-classic-fill "+(pPct>50?"high":pPct>20?"mid":"low");
+  eBar.className="hp-classic-fill "+(ePct>50?"high":ePct>20?"mid":"low");
+  document.getElementById("playerHpText").textContent=`${Math.ceil(Math.max(0,p.hp))}/${p.maxHp}`;
+  document.getElementById("enemyHpText").textContent=`${Math.ceil(Math.max(0,e.hp))}/${e.maxHp}`;
+  updateWeatherUI();
+}
+
+function showCmd(){
+  if(isPlayerTurn && !battleOver) startTurnTimer();
+  document.getElementById("cmdMenu").style.display="grid";
+  document.getElementById("movesMenu").classList.remove("active");
+  document.getElementById("partyMenu").classList.remove("active");
+  moveMode=false;partyMode=false;
+  document.querySelectorAll(".cmd-btn").forEach((b,i)=>b.classList.toggle("selected",i===cmdIndex));
+}
+function openMoves(){
+  if(!isPlayerTurn||battleOver)return;
+  sfxSelect();
+  const p=playerTeam[playerActive],e=enemyTeam[enemyActive];
+  const menu=document.getElementById("movesMenu");
+  menu.innerHTML=p.moves.map((m,i)=>{
+    const mult=getMult(m.type,e.types),et=effText(mult);
+    const cat=m.cat==="physical"?"Fís":m.cat==="special"?"Esp":"Est";
+    return`<button class="move-option ${i===0?"selected":""}" data-idx="${i}" onclick="doMove(${i})">
+      ${m.name}<div class="meta"><span class="type-badge type-${TYPE_CLASS[m.type]}">${TYPE_ES[m.type]}</span> ${m.power||"—"} · ${cat} ${et?"· "+et:""}</div></button>`;
+  }).join("");
+  menu.classList.add("active");
+  document.getElementById("cmdMenu").style.display="none";
+  moveMode=true;moveIndex=0;
+  setMsg("Elige un ataque.");
+}
+function openParty(){
+  if(battleOver)return;
+  const menu=document.getElementById("partyMenu");
+  menu.innerHTML=playerTeam.map((poke,i)=>{
+    const cls=poke.fainted?"fainted":(i===playerActive?"selected":"");
+    return`<div class="party-item ${cls}" onclick="doSwitch(${i})">
+      <img src="${poke.frontStatic}"><div>${poke.name}<br>${Math.ceil(Math.max(0,poke.hp))}/${poke.maxHp} ${poke.fainted?"· KO":""}</div></div>`;
+  }).join("")+`<button class="btn btn-sm" style="margin-top:8px" onclick="showCmd()">Cancelar</button>`;
+  menu.classList.add("active");
+  document.getElementById("cmdMenu").style.display="none";
+  document.getElementById("movesMenu").classList.remove("active");
+  partyMode=true;moveMode=false;
+  setMsg("Elige un Pokémon.");
+}
+
+function doMove(idx){
+  if(!isPlayerTurn||battleOver)return;
+  stopTurnTimer();
+  isPlayerTurn=false;
+  document.getElementById("movesMenu").classList.remove("active");
+  const p=playerTeam[playerActive],e=enemyTeam[enemyActive];
+  executeMove(p,e,p.moves[idx],"player");
+  updateBattleVisuals();
+  if(checkFaints())return;
+  setTimeout(()=>{if(!battleOver)botTurn();},900);
+}
+function doSwitch(idx){
+  if(playerTeam[idx].fainted||idx===playerActive)return;
+  const wasForced=!isPlayerTurn;
+  stopTurnTimer();
+  sfxSwitch();
+  playerActive=idx;
+  boosts.player={atk:0,def:0,spa:0,spd:0,spe:0};
+  document.getElementById("partyMenu").classList.remove("active");
+  showPokeballIntro(() => {
+    setMsg(`¡Adelante, ${playerTeam[playerActive].name}!`);
+    playCry(getDexId(playerTeam[playerActive].key));
+    updateBattleVisuals();
+    if(wasForced){
+      isPlayerTurn=true;
+      showCmd();
+    } else {
+      isPlayerTurn=false;
+      showCmd();
+      setTimeout(()=>{if(!battleOver)botTurn();},700);
+    }
+  });
+}
+
+function executeMove(att,def,move,side){
+  const isP=side==="player";
+  const aB=isP?boosts.player:boosts.enemy;
+  const dB=isP?boosts.enemy:boosts.player;
+  setMsg(`¡${att.name} usó ${move.name}!`);
+  if(move.weather){
+    weather=move.weather;weatherTurns=5;
+    const names={sun:"Sol intenso",rain:"Lluvia",sand:"Tormenta de Arena"};
+    sfxStatus();
+    setMsg(`¡${att.name} usó ${move.name}! ¡El clima cambió a ${names[weather]}!`);
+    updateWeatherUI();return;
+  }
+  if(move.cat==="status"){
+    sfxStatus();
+    if(move.name.includes("Danza Espada")){aB.atk=Math.min(6,aB.atk+2);setMsg(`¡${att.name} aumentó mucho su Ataque!`);}
+    else if(move.name.includes("Danza Dragón")){aB.atk=Math.min(6,aB.atk+1);aB.spe=Math.min(6,aB.spe+1);setMsg(`¡${att.name} aumentó Ataque y Velocidad!`);}
+    else if(move.name.includes("Maquinación")){aB.spa=Math.min(6,aB.spa+2);setMsg(`¡${att.name} aumentó mucho su At.Esp!`);}
+    else if(move.name.includes("Mente Tranquila")){aB.spa=Math.min(6,aB.spa+1);aB.spd=Math.min(6,aB.spd+1);setMsg(`¡${att.name} aumentó At.Esp y Def.Esp!`);}
+    else if(move.name.includes("Armadura")){aB.def=Math.min(6,aB.def+2);setMsg(`¡${att.name} aumentó mucho su Defensa!`);}
+    else if(move.name.includes("Recuperación")||move.name.includes("Síntesis")||move.name.includes("Respiro")||move.name.includes("Descanso")){
+      att.hp=Math.min(att.maxHp,att.hp+Math.floor(att.maxHp*.5));setMsg(`¡${att.name} recuperó PS!`);
+    }else setMsg(`¡${att.name} usó ${move.name}!`);
+    return;
+  }
+  playAttackAnim(side);
+  const mult = getMult(move.type, def.types);
+  const dmg=calcDmg(att,def,move,aB[move.cat==="physical"?"atk":"spa"],dB[move.cat==="physical"?"def":"spd"]);
+  def.hp=Math.max(0,def.hp-dmg);
+  const et=effText(mult);
+  if(mult >= 2) sfxSuperEffective();
+  else if(mult > 0 && mult <= 0.5) sfxNotVery();
+  else if(mult === 0) sfxNotVery();
+  else sfxHit();
+  setMsg(`${att.name} infligió ${dmg} de daño a ${def.name}.${et?" "+et:""}`);
+}
+
+function botTurn(){
+  if(battleOver)return;
+  const e=enemyTeam[enemyActive],p=playerTeam[playerActive];
+  let best=0,bestS=-999;
+  e.moves.forEach((m,i)=>{
+    let s=0;
+    if(m.weather&&!weather)s=50;
+    else if(m.cat==="status")s=p.hp<p.maxHp*.4?35:10;
+    else{const mult=getMult(m.type,p.types);s=m.power*mult+(mult>=2?40:0);if(mult===0)s=-100;}
+    s+=Math.random()*20;
+    if(s>bestS){bestS=s;best=i;}
+  });
+  if(Math.random()<.1){
+    const alt=enemyTeam.findIndex((x,i)=>i!==enemyActive&&!x.fainted);
+    if(alt>=0){
+      enemyActive=alt;
+      showPokeballIntro(() => {
+        setMsg(`¡El rival envió a ${enemyTeam[enemyActive].name}!`);
+        playCry(getDexId(enemyTeam[enemyActive].key));
+        updateBattleVisuals();
+        finishBotTurn();
+      });
+      return;
+    }
+  }
+  executeMove(e,p,e.moves[best],"enemy");
+  updateBattleVisuals();
+  if(checkFaints())return;
+  finishBotTurn();
+}
+function finishBotTurn(){
+  applyWeatherDamage();tickWeather();updateBattleVisuals();
+  if(checkFaints())return;
+  isPlayerTurn=true;
+  setMsg(document.getElementById("msgBox").innerHTML+"<br>¿Qué debería hacer "+playerTeam[playerActive].name+"?");
+  showCmd();
+}
+
+function checkFaints(){
+  const p=playerTeam[playerActive],e=enemyTeam[enemyActive];
+  if(e.hp<=0){
+    e.fainted=true;sfxFaint();setMsg(`¡${e.name} se debilitó!`);
+    const next=enemyTeam.findIndex(x=>!x.fainted);
+    if(next<0){endBattle(true);return true;}
+    enemyActive=next;
+    setTimeout(()=>{
+      showPokeballIntro(() => {
+        setMsg(`¡El rival envió a ${enemyTeam[enemyActive].name}!`);
+        playCry(getDexId(enemyTeam[enemyActive].key));
+        updateBattleVisuals();
+        isPlayerTurn=true;
+        showCmd();
+      });
+    },400);
+    return true;
+  }
+  if(p.hp<=0){
+    p.fainted=true;sfxFaint();setMsg(`¡${p.name} se debilitó! Elige otro Pokémon.`);
+    if(!playerTeam.some(x=>!x.fainted)){endBattle(false);return true;}
+    isPlayerTurn=false;openParty();return true;
+  }
+  return false;
+}
+
+function endBattle(won){
+  battleOver=true;stopTurnTimer();stopMusic();showScreen("screen-result");
+  const box=document.getElementById("resultBox");
+  box.className="result "+(won?"win":"lose");
+  document.getElementById("resultTitle").textContent=won?"¡Victoria!":"Derrota...";
+  document.getElementById("resultMsg").textContent=won
+    ?"¡Bien hecho! Aprendiste sobre tipos, clima y estrategia."
+    :"Es un tutorial. Revisa la tabla de tipos e inténtalo de nuevo.";
+}
+function forfeit(){if(confirm("¿Rendirse?"))endBattle(false);}
+
+function showTypeChart(){
+  const types=Object.keys(TYPE_ES);
+  let html="<table><tr><th>Atk\\Def</th>";
+  types.forEach(t=>html+=`<th style="font-size:8px">${TYPE_ES[t].slice(0,3)}</th>`);
+  html+="</tr>";
+  types.forEach(atk=>{
+    html+=`<tr><th style="font-size:8px">${TYPE_ES[atk].slice(0,3)}</th>`;
+    types.forEach(def=>{
+      const m=TYPE_CHART[atk]?.[def]??1;
+      const cls=m===0?"imm":m>=2?"se":m<=.5?"nve":"";
+      const txt=m===0?"0":m===.5?"½":m===2?"2":"";
+      html+=`<td class="${cls}">${txt}</td>`;
+    });
+    html+="</tr>";
+  });
+  html+="</table>";
+  document.getElementById("typeChartContent").innerHTML=html;
+  document.getElementById("typeModal").classList.add("active");
+}
+function hideTypeChart(){document.getElementById("typeModal").classList.remove("active");}
+
+function ensureBgmSrc(){
+  const a = document.getElementById("bgm");
+  if(!a) return null;
+  // Si el usuario ya eligió un archivo (blob), no tocar
+  if(a.dataset.userFile === "1") {
+    a.volume = (typeof musicVolume==='number'?musicVolume:0.4);
+    return a;
+  }
+  // Probar nombres habituales en la misma carpeta
+  if(!a.getAttribute("src") || a.src === "" || a.src.endsWith("/") || a.src.endsWith(".html")){
+    a.src = "battle-theme.mp3";
+  }
+  a.volume = (typeof musicVolume==='number'?musicVolume:0.4);
+  return a;
+}
+function loadMusicFile(input){
+  const file = input.files && input.files[0];
+  if(!file) return;
+  const a = document.getElementById("bgm");
+  if(!a) return;
+  // Revocar blob anterior
+  if(a.dataset.blobUrl){
+    try{ URL.revokeObjectURL(a.dataset.blobUrl); }catch(e){}
+  }
+  const url = URL.createObjectURL(file);
+  a.dataset.blobUrl = url;
+  a.dataset.userFile = "1";
+  a.src = url;
+  a.load();
+  musicOn = false;
+  const btn = document.getElementById("musicToggle");
+  a.play().then(()=>{
+    musicOn = true;
+    if(btn) btn.textContent = "🔊 " + (file.name.length > 18 ? file.name.slice(0,16)+"…" : file.name);
+  }).catch(()=>{
+    if(btn) btn.textContent = "🔇 Error";
+    alert("No se pudo reproducir ese archivo.\nPrueba convertirlo a MP3 con VLC o un convertidor online.");
+  });
+}
+function startMusic(){
+  try{ getAudioCtx(); }catch(e){}
+  loadMusicVol();
+  const a = ensureBgmSrc();
+  if(!a) return;
+  a.volume = (typeof musicVolume==='number'?musicVolume:0.4);
+  const btn = document.getElementById("musicToggle");
+  a.play().then(()=>{
+    musicOn = true;
+    if(btn && btn.textContent.indexOf("🔊") < 0) btn.textContent = "🔊 Música";
+  }).catch((err)=>{
+    musicOn = false;
+    if(btn) btn.textContent = "🔇 Música";
+    console.warn("Música:", err);
+  });
+}
+function stopMusic(){
+  const a = document.getElementById("bgm");
+  if(a){ a.pause(); a.currentTime = 0; }
+  musicOn = false;
+  const btn = document.getElementById("musicToggle");
+  if(btn) btn.textContent = "🔇 Música";
+}
+function toggleMusic(){
+  try{ getAudioCtx(); }catch(e){}
+  const a = ensureBgmSrc();
+  const btn = document.getElementById("musicToggle");
+  if(!a){ alert("No se encontró el reproductor de audio."); return; }
+
+  if(musicOn && !a.paused){
+    a.pause();
+    musicOn = false;
+    if(btn) btn.textContent = "🔇 Música";
+    return;
+  }
+
+  a.play().then(()=>{
+    musicOn = true;
+    if(btn) btn.textContent = "🔊 Música";
+  }).catch(()=>{
+    musicOn = false;
+    if(btn) btn.textContent = "🔇 Elegir MP3";
+    alert(
+      "No se encontró battle-theme.mp3 en la carpeta.\n\n" +
+      "Opción fácil:\n" +
+      "1) Pulsa el botón «📁 Elegir MP3»\n" +
+      "2) Selecciona tu archivo de música\n\n" +
+      "O bien:\n" +
+      "• Renombra tu MP3 a battle-theme.mp3\n" +
+      "• Ponlo en la MISMA carpeta que el HTML\n" +
+      "• Vuelve a abrir el HTML y pulsa Música"
+    );
+  });
+}
+
+document.addEventListener("keydown",e=>{
+  if(!document.getElementById("screen-battle").classList.contains("active")||battleOver)return;
+  if(e.key==="Escape"){hideTypeChart();showCmd();return;}
+  if(partyMode)return;
+  if(moveMode){
+    const opts=document.querySelectorAll(".move-option");
+    if(e.key==="ArrowRight"||e.key==="ArrowDown")moveIndex=(moveIndex+1)%opts.length;
+    if(e.key==="ArrowLeft"||e.key==="ArrowUp")moveIndex=(moveIndex-1+opts.length)%opts.length;
+    opts.forEach((o,i)=>o.classList.toggle("selected",i===moveIndex));
+    if(e.key==="Enter")doMove(moveIndex);
+    return;
+  }
+  if(e.key==="ArrowRight"||e.key==="ArrowDown")cmdIndex=(cmdIndex+1)%4;
+  if(e.key==="ArrowLeft"||e.key==="ArrowUp")cmdIndex=(cmdIndex-1+4)%4;
+  document.querySelectorAll(".cmd-btn").forEach((b,i)=>b.classList.toggle("selected",i===cmdIndex));
+  if(e.key==="Enter"){
+    if(cmdIndex===0)openMoves();
+    else if(cmdIndex===1)openParty();
+    else if(cmdIndex===2)showTypeChart();
+    else forfeit();
+  }
+});
+
+
+
+
+
+// ===== SPRITE SETUP (sin combate) =====
+let setupPlayerKey = "pikachu";
+let setupEnemyKey = "charizard";
+let setupEditKey = "pikachu";
+let setupSide = "player"; // "player" | "enemy" — ajustes separados por lado
+
+function emptyMonSide(){ return {size:0, x:0, y:0}; }
+function normalizeMonCfg(raw){
+  // Migrar formato viejo {size,x,y} → {player:{}, enemy:{}}
+  if(!raw || typeof raw !== "object") return {player: emptyMonSide(), enemy: emptyMonSide()};
+  if(raw.player || raw.enemy){
+    return {
+      player: {...emptyMonSide(), ...(raw.player||{})},
+      enemy: {...emptyMonSide(), ...(raw.enemy||{})}
+    };
+  }
+  // formato antiguo: mismos valores van a ambos lados al migrar
+  const legacy = {size: raw.size||0, x: raw.x||0, y: raw.y||0};
+  return {player: {...legacy}, enemy: {...legacy}};
+}
+function adminGetMonCfg(key, side){
+  if(!adminCfg.mons) adminCfg.mons = {};
+  adminCfg.mons[key] = normalizeMonCfg(adminCfg.mons[key]);
+  if(side === "player" || side === "enemy") return adminCfg.mons[key][side];
+  return adminCfg.mons[key];
+}
+
+function openSpriteSetup(){
+  const keys = Object.keys(POKEMON);
+  if(!keys.length) return;
+  if(!POKEMON[setupPlayerKey]) setupPlayerKey = keys[0];
+  if(!POKEMON[setupEnemyKey]) setupEnemyKey = keys[Math.min(1, keys.length-1)];
+  setupSide = "player";
+  setupEditKey = setupPlayerKey;
+  const fill = (id, selected) => {
+    const sel = document.getElementById(id);
+    if(!sel) return;
+    sel.innerHTML = keys.map(k => `<option value="${k}" ${k===selected?"selected":""}>${POKEMON[k].name}</option>`).join("");
+  };
+  fill("setupPlayerSel", setupPlayerKey);
+  fill("setupEnemySel", setupEnemyKey);
+  fill("setupEditSel", setupEditKey);
+  setupUpdateSideButtons();
+  showScreen("screen-setup");
+  setupRefreshPreview();
+  setupLoadEdit();
+}
+function setupSetSide(side){
+  setupSide = side;
+  // Al cambiar a un lado, editar el mon que se ve en ese lado
+  if(side === "player"){
+    setupEditKey = setupPlayerKey;
+  } else {
+    setupEditKey = setupEnemyKey;
+  }
+  const sel = document.getElementById("setupEditSel");
+  if(sel) sel.value = setupEditKey;
+  setupUpdateSideButtons();
+  setupLoadEdit();
+  applySetupPositions();
+}
+function setupUpdateSideButtons(){
+  const bp = document.getElementById("setupSidePlayer");
+  const be = document.getElementById("setupSideEnemy");
+  if(bp){
+    bp.className = setupSide === "player" ? "btn btn-sm" : "btn btn-outline btn-sm";
+    bp.style.flex = "1";
+  }
+  if(be){
+    be.className = setupSide === "enemy" ? "btn btn-sm" : "btn btn-outline btn-sm";
+    be.style.flex = "1";
+  }
+}
+function setupOnEditMonChange(){
+  const sel = document.getElementById("setupEditSel");
+  if(!sel) return;
+  setupEditKey = sel.value;
+  // Si editas un mon del lado actual, también lo pones en el preview de ese lado
+  if(setupSide === "player"){
+    setupPlayerKey = setupEditKey;
+    const ps = document.getElementById("setupPlayerSel");
+    if(ps) ps.value = setupEditKey;
+  } else {
+    setupEnemyKey = setupEditKey;
+    const es = document.getElementById("setupEnemySel");
+    if(es) es.value = setupEditKey;
+  }
+  setupRefreshPreview();
+  setupLoadEdit();
+}
+function setupRefreshPreview(){
+  const ps = document.getElementById("setupPlayerSel");
+  const es = document.getElementById("setupEnemySel");
+  if(ps) setupPlayerKey = ps.value;
+  if(es) setupEnemyKey = es.value;
+  const p = POKEMON[setupPlayerKey], e = POKEMON[setupEnemyKey];
+  const pImg = document.getElementById("setupPlayerSprite");
+  const eImg = document.getElementById("setupEnemySprite");
+  if(p && pImg){
+    pImg.onerror = () => { pImg.onerror=null; pImg.src = p.backStatic || p.frontStatic; };
+    pImg.src = p.back || p.backStatic;
+  }
+  if(e && eImg){
+    eImg.onerror = () => { eImg.onerror=null; eImg.src = e.frontStatic; };
+    eImg.src = e.front || e.frontStatic;
+  }
+  applySetupPositions();
+}
+function applySetupPositions(){
+  const pEl = document.getElementById("setupPlayerSprite");
+  const eEl = document.getElementById("setupEnemySprite");
+  const pEx = adminGetMonCfg(setupPlayerKey, "player");
+  const eEx = adminGetMonCfg(setupEnemyKey, "enemy");
+  if(pEl){
+    const size = Math.max(40, (adminCfg.pSize||210) + (pEx.size||0));
+    pEl.style.left = ((adminCfg.pLeft||0) + (pEx.x||0)) + "%";
+    pEl.style.bottom = ((adminCfg.pBottom||0) + (pEx.y||0)) + "%";
+    pEl.style.top = "auto";
+    pEl.style.right = "auto";
+    pEl.style.width = size + "px";
+    pEl.style.height = size + "px";
+  }
+  if(eEl){
+    const size = Math.max(40, (adminCfg.eSize||150) + (eEx.size||0));
+    eEl.style.right = ((adminCfg.eRight||0) + (eEx.x||0)) + "%";
+    eEl.style.top = ((adminCfg.eTop||0) + (eEx.y||0)) + "%";
+    eEl.style.left = "auto";
+    eEl.style.bottom = "auto";
+    eEl.style.width = size + "px";
+    eEl.style.height = size + "px";
+  }
+}
+function setupLoadEdit(){
+  const sel = document.getElementById("setupEditSel");
+  if(sel) setupEditKey = sel.value;
+  const m = adminGetMonCfg(setupEditKey, setupSide);
+  const set = (id, v, lab) => {
+    const el = document.getElementById(id);
+    const l = document.getElementById(lab);
+    if(el) el.value = v;
+    if(l) l.textContent = v;
+  };
+  set("setupSize", m.size||0, "setupSizeL");
+  set("setupX", m.x||0, "setupXL");
+  set("setupY", m.y||0, "setupYL");
+}
+function setupApplyEdit(){
+  // SOLO modifica el lado activo del Pokémon elegido — no toca la base global
+  const m = adminGetMonCfg(setupEditKey, setupSide);
+  m.size = Number(document.getElementById("setupSize")?.value || 0);
+  m.x = Number(document.getElementById("setupX")?.value || 0);
+  m.y = Number(document.getElementById("setupY")?.value || 0);
+  document.getElementById("setupSizeL").textContent = m.size;
+  document.getElementById("setupXL").textContent = m.x;
+  document.getElementById("setupYL").textContent = m.y;
+  applySetupPositions();
+}
+function setupSave(){
+  setupApplyEdit();
+  try { localStorage.setItem("pokeAdminCfg", JSON.stringify(adminCfg)); } catch(e){}
+  const lado = setupSide === "player" ? "TU LADO" : "RIVAL";
+  alert("✓ Guardado permanentemente en este navegador:\n" + (POKEMON[setupEditKey]?.name || setupEditKey) + " (" + lado + ").\n\nAl volver a abrir el HTML en ESTE mismo navegador, se cargarán solos.");
+}
+function exportSpriteSettings(){
+  setupApplyEdit();
+  const data = JSON.stringify(adminCfg, null, 2);
+  try { localStorage.setItem("pokeAdminCfg", data); } catch(e){}
+  // copiar al portapapeles si se puede
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(data).then(()=>{
+      alert("Ajustes copiados al portapapeles.\nPégalos en un chat con Grok para dejarlos fijos en el HTML.");
+    }).catch(()=>{ prompt("Copia estos ajustes:", data); });
+  } else {
+    prompt("Copia estos ajustes:", data);
+  }
+}
+function setupResetCurrent(){
+  const full = adminGetMonCfg(setupEditKey);
+  full[setupSide] = emptyMonSide();
+  setupLoadEdit();
+  applySetupPositions();
+}
+
+
+// ===== ADMIN CONFIG =====
+// ===== ADMIN CONFIG =====
+const ADMIN_DEFAULTS = {
+  "vol": 15,
+  "sfx": 100,
+  "pLeft": 3,
+  "pBottom": 6,
+  "pSize": 275,
+  "eRight": 16,
+  "eTop": 33,
+  "eSize": 144,
+  "mons": {
+    "venusaur": {
+      "player": {
+        "size": 24,
+        "x": 1,
+        "y": -2
+      },
+      "enemy": {
+        "size": 31,
+        "x": -1,
+        "y": -4
+      }
+    },
+    "metagross": {
+      "player": {
+        "size": 120,
+        "x": -3,
+        "y": -4
+      },
+      "enemy": {
+        "size": 89,
+        "x": -4,
+        "y": -14
+      }
+    },
+    "pikachu": {
+      "player": {
+        "size": -47,
+        "x": -2,
+        "y": -1
+      },
+      "enemy": {
+        "size": -25,
+        "x": 0,
+        "y": 5
+      }
+    },
+    "machamp": {
+      "player": {
+        "size": 13,
+        "x": 0,
+        "y": -3
+      },
+      "enemy": {
+        "size": 17,
+        "x": 0,
+        "y": -3
+      }
+    },
+    "lapras": {
+      "player": {
+        "size": 31,
+        "x": 1,
+        "y": -8
+      },
+      "enemy": {
+        "size": 15,
+        "x": -1,
+        "y": -1
+      }
+    },
+    "vaporeon": {
+      "player": {
+        "size": -2,
+        "x": 1,
+        "y": 2
+      },
+      "enemy": {
+        "size": -2,
+        "x": -1,
+        "y": 2
+      }
+    },
+    "jolteon": {
+      "player": {
+        "size": -64,
+        "x": 5,
+        "y": 0
+      },
+      "enemy": {
+        "size": -13,
+        "x": 1,
+        "y": 3
+      }
+    },
+    "garchomp": {
+      "player": {
+        "size": 25,
+        "x": -1,
+        "y": -6
+      },
+      "enemy": {
+        "size": 41,
+        "x": -2,
+        "y": -6
+      }
+    },
+    "butterfree": {
+      "player": {
+        "size": -3,
+        "x": 0,
+        "y": 1
+      },
+      "enemy": {
+        "size": -3,
+        "x": 0,
+        "y": -4
+      }
+    },
+    "milotic": {
+      "player": {
+        "size": 32,
+        "x": 0,
+        "y": -4
+      },
+      "enemy": {
+        "size": 31,
+        "x": -4,
+        "y": -5
+      }
+    },
+    "alakazam": {
+      "player": {
+        "size": 11,
+        "x": 0,
+        "y": 0
+      },
+      "enemy": {
+        "size": 37,
+        "x": -1,
+        "y": -6
+      }
+    },
+    "lucario": {
+      "player": {
+        "size": 0,
+        "x": 0,
+        "y": -4
+      },
+      "enemy": {
+        "size": 4,
+        "x": 0,
+        "y": -1
+      }
+    },
+    "umbreon": {
+      "player": {
+        "size": -48,
+        "x": 0,
+        "y": -2
+      },
+      "enemy": {
+        "size": -8,
+        "x": 0,
+        "y": 1
+      }
+    },
+    "gardevoir": {
+      "player": {
+        "size": 14,
+        "x": 2,
+        "y": -1
+      },
+      "enemy": {
+        "size": 17,
+        "x": -2,
+        "y": -3
+      }
+    },
+    "charizard": {
+      "player": {
+        "size": 86,
+        "x": -2,
+        "y": -8
+      },
+      "enemy": {
+        "size": 51,
+        "x": -3,
+        "y": -9
+      }
+    },
+    "blastoise": {
+      "player": {
+        "size": 4,
+        "x": 1,
+        "y": -10
+      },
+      "enemy": {
+        "size": 14,
+        "x": 1,
+        "y": 0
+      }
+    },
+    "gyarados": {
+      "player": {
+        "size": 120,
+        "x": -5,
+        "y": -9
+      },
+      "enemy": {
+        "size": 82,
+        "x": -5,
+        "y": -13
+      }
+    },
+    "gengar": {
+      "player": {
+        "size": 0,
+        "x": 0,
+        "y": 0
+      },
+      "enemy": {
+        "size": 41,
+        "x": -1,
+        "y": -7
+      }
+    },
+    "snorlax": {
+      "player": {
+        "size": 30,
+        "x": 0,
+        "y": 0
+      },
+      "enemy": {
+        "size": 16,
+        "x": 0,
+        "y": -1
+      }
+    },
+    "dragonite": {
+      "player": {
+        "size": 44,
+        "x": -5,
+        "y": 0
+      },
+      "enemy": {
+        "size": 24,
+        "x": -4,
+        "y": -4
+      }
+    },
+    "tyranitar": {
+      "player": {
+        "size": 48,
+        "x": -5,
+        "y": -11
+      },
+      "enemy": {
+        "size": 92,
+        "x": -8,
+        "y": -17
+      }
+    },
+    "scizor": {
+      "player": {
+        "size": 12,
+        "x": 3,
+        "y": -6
+      },
+      "enemy": {
+        "size": 7,
+        "x": 2,
+        "y": 1
+      }
+    },
+    "togekiss": {
+      "player": {
+        "size": 29,
+        "x": 2,
+        "y": 13
+      },
+      "enemy": {
+        "size": 21,
+        "x": -1,
+        "y": -13
+      }
+    },
+    "electivire": {
+      "player": {
+        "size": 86,
+        "x": -1,
+        "y": -6
+      },
+      "enemy": {
+        "size": 82,
+        "x": -5,
+        "y": -15
+      }
+    },
+    "rhydon": {
+      "player": {
+        "size": 9,
+        "x": 1,
+        "y": -3
+      },
+      "enemy": {
+        "size": 41,
+        "x": -2,
+        "y": -7
+      }
+    },
+    "arcanine": {
+      "player": {
+        "size": 9,
+        "x": 0,
+        "y": -2
+      },
+      "enemy": {
+        "size": 21,
+        "x": -2,
+        "y": -3
+      }
+    },
+    "flareon": {
+      "player": {
+        "size": 5,
+        "x": -2,
+        "y": 0
+      },
+      "enemy": {
+        "size": 8,
+        "x": -3,
+        "y": -1
+      }
+    },
+    "raichu": {
+      "player": {
+        "size": 0,
+        "x": 7,
+        "y": -3
+      },
+      "enemy": {
+        "size": 6,
+        "x": 2,
+        "y": 1
+      }
+    },
+    "espeon": {
+      "player": {
+        "size": 13,
+        "x": -3,
+        "y": 0
+      },
+      "enemy": {
+        "size": 13,
+        "x": -2,
+        "y": -2
+      }
+    },
+    "sceptile": {
+      "player": {
+        "size": 58,
+        "x": -3,
+        "y": -12
+      },
+      "enemy": {
+        "size": 23,
+        "x": -2,
+        "y": -3
+      }
+    },
+    "blaziken": {
+      "player": {
+        "size": 10,
+        "x": 2,
+        "y": -4
+      },
+      "enemy": {
+        "size": 21,
+        "x": 0,
+        "y": -2
+      }
+    },
+    "swampert": {
+      "player": {
+        "size": 16,
+        "x": 1,
+        "y": 0
+      },
+      "enemy": {
+        "size": 29,
+        "x": 0,
+        "y": -5
+      }
+    }
+  }
+};
+let adminCfg = JSON.parse(JSON.stringify(ADMIN_DEFAULTS));
+let sfxVolume = 1;
+
+function loadAdminCfg(){
+  // Siempre partir de los ajustes incrustados en el HTML
+  adminCfg = JSON.parse(JSON.stringify(ADMIN_DEFAULTS));
+  try {
+    const raw = localStorage.getItem("pokeAdminCfg");
+    if(raw){
+      const parsed = JSON.parse(raw);
+      // fusionar base
+      Object.keys(parsed).forEach(k => {
+        if(k === "mons") return;
+        if(parsed[k] !== undefined) adminCfg[k] = parsed[k];
+      });
+      if(parsed.mons){
+        if(!adminCfg.mons) adminCfg.mons = {};
+        Object.keys(parsed.mons).forEach(mon => {
+          adminCfg.mons[mon] = normalizeMonCfg({
+            ...(adminCfg.mons[mon] || {}),
+            ...parsed.mons[mon],
+            player: { ...(adminCfg.mons[mon]?.player||{}), ...(parsed.mons[mon].player||{}) },
+            enemy: { ...(adminCfg.mons[mon]?.enemy||{}), ...(parsed.mons[mon].enemy||{}) }
+          });
+        });
+      }
+    }
+  } catch(e){}
+  sfxVolume = (adminCfg.sfx || 100) / 100;
+  if(typeof musicVolume !== "undefined") musicVolume = (adminCfg.vol || 40) / 100;
+  adminFillMonSelect();
+  applyAdminToDOM();
+  applyAdminToAudio();
+}
+function adminFillMonSelect(){
+  const sel = document.getElementById("admMonSelect");
+  if(!sel || typeof POKEMON === "undefined") return;
+  const cur = sel.value;
+  sel.innerHTML = Object.keys(POKEMON).map(k =>
+    `<option value="${k}">${POKEMON[k].name}</option>`
+  ).join("");
+  if(cur && POKEMON[cur]) sel.value = cur;
+  adminLoadMon();
+}
+function adminLoadMon(){
+  const key = document.getElementById("admMonSelect")?.value;
+  if(!key) return;
+  // Panel Admin: edita lado JUGADOR de ese mon (usa "Ajustar Pokémon" para rival)
+  const m = adminGetMonCfg(key, "player");
+  const set = (id, v, lab) => {
+    const el = document.getElementById(id);
+    const l = document.getElementById(lab);
+    if(el) el.value = v;
+    if(l) l.textContent = v;
+  };
+  set("admMonSize", m.size||0, "admMonSizeL");
+  set("admMonX", m.x||0, "admMonXL");
+  set("admMonY", m.y||0, "admMonYL");
+}
+function adminSaveMonFromUI(){
+  const key = document.getElementById("admMonSelect")?.value;
+  if(!key) return;
+  const m = adminGetMonCfg(key, "player");
+  m.size = Number(document.getElementById("admMonSize")?.value || 0);
+  m.x = Number(document.getElementById("admMonX")?.value || 0);
+  m.y = Number(document.getElementById("admMonY")?.value || 0);
+}
+function adminResetMon(){
+  const key = document.getElementById("admMonSelect")?.value;
+  if(!key) return;
+  adminCfg.mons[key] = {player: emptyMonSide(), enemy: emptyMonSide()};
+  adminLoadMon();
+  applyAdminToDOM();
+}
+function adminSave(){
+  readAdminFromUI();
+  adminSaveMonFromUI();
+  try { localStorage.setItem("pokeAdminCfg", JSON.stringify(adminCfg)); } catch(e){}
+  applyAdminToDOM();
+  applyAdminToAudio();
+  alert("Ajustes guardados (incluye cada Pokémon) en este navegador.");
+}
+function adminReset(){
+  adminCfg = JSON.parse(JSON.stringify(ADMIN_DEFAULTS));
+  try { localStorage.removeItem("pokeAdminCfg"); } catch(e){}
+  fillAdminUI();
+  adminLoadMon();
+  applyAdminToDOM();
+  applyAdminToAudio();
+}
+function fillAdminUI(){
+  const set = (id, v, lab) => {
+    const el = document.getElementById(id);
+    const l = document.getElementById(lab);
+    if(el) el.value = v;
+    if(l) l.textContent = v;
+  };
+  set("admVol", adminCfg.vol, "admVolLabel");
+  set("admSfx", adminCfg.sfx, "admSfxLabel");
+  set("admPLeft", adminCfg.pLeft, "admPLeftL");
+  set("admPBottom", adminCfg.pBottom, "admPBottomL");
+  set("admPSize", adminCfg.pSize, "admPSizeL");
+  set("admERight", adminCfg.eRight, "admERightL");
+  set("admETop", adminCfg.eTop, "admETopL");
+  set("admESize", adminCfg.eSize, "admESizeL");
+}
+function readAdminFromUI(){
+  const n = id => Number(document.getElementById(id)?.value ?? 0);
+  adminCfg.vol = n("admVol");
+  adminCfg.sfx = n("admSfx");
+  adminCfg.pLeft = n("admPLeft");
+  adminCfg.pBottom = n("admPBottom");
+  adminCfg.pSize = n("admPSize");
+  adminCfg.eRight = n("admERight");
+  adminCfg.eTop = n("admETop");
+  adminCfg.eSize = n("admESize");
+  sfxVolume = adminCfg.sfx / 100;
+  adminSaveMonFromUI();
+}
+function adminApplyLive(){
+  const map = {
+    admVol: "admVolLabel", admSfx: "admSfxLabel",
+    admPLeft: "admPLeftL", admPBottom: "admPBottomL", admPSize: "admPSizeL",
+    admERight: "admERightL", admETop: "admETopL", admESize: "admESizeL",
+    admMonSize: "admMonSizeL", admMonX: "admMonXL", admMonY: "admMonYL"
+  };
+  Object.keys(map).forEach(id=>{
+    const el = document.getElementById(id);
+    const lab = document.getElementById(map[id]);
+    if(el && lab) lab.textContent = el.value;
+  });
+  readAdminFromUI();
+  applyAdminToDOM();
+  applyAdminToAudio();
+}
+function applyAdminToDOM(){
+  // Si estamos en pantalla de ajustes, actualizar esa vista
+  if(document.getElementById("screen-setup")?.classList.contains("active")){
+    applySetupPositions();
+  }
+  const pEl = document.getElementById("playerSprite");
+  const eEl = document.getElementById("enemySprite");
+  let pExtra = {size:0,x:0,y:0}, eExtra = {size:0,x:0,y:0};
+  try {
+    if(typeof playerTeam !== "undefined" && playerTeam[playerActive])
+      pExtra = adminGetMonCfg(playerTeam[playerActive].key, "player");
+    if(typeof enemyTeam !== "undefined" && enemyTeam[enemyActive])
+      eExtra = adminGetMonCfg(enemyTeam[enemyActive].key, "enemy");
+  } catch(err){}
+
+  if(pEl){
+    const size = Math.max(40, (adminCfg.pSize||210) + (pExtra.size||0));
+    pEl.style.left = ((adminCfg.pLeft||0) + (pExtra.x||0)) + "%";
+    pEl.style.bottom = ((adminCfg.pBottom||0) + (pExtra.y||0)) + "%";
+    pEl.style.top = "auto";
+    pEl.style.right = "auto";
+    pEl.style.width = size + "px";
+    pEl.style.height = size + "px";
+  }
+  if(eEl){
+    const size = Math.max(40, (adminCfg.eSize||150) + (eExtra.size||0));
+    eEl.style.right = ((adminCfg.eRight||0) + (eExtra.x||0)) + "%";
+    eEl.style.top = ((adminCfg.eTop||0) + (eExtra.y||0)) + "%";
+    eEl.style.left = "auto";
+    eEl.style.bottom = "auto";
+    eEl.style.width = size + "px";
+    eEl.style.height = size + "px";
+  }
+}
+function applyAdminToAudio(){
+  const a = document.getElementById("bgm");
+  if(a) a.volume = Math.max(0, Math.min(1, (adminCfg.vol || 40) / 100));
+}
+function openAdmin(){
+  adminFillMonSelect();
+  fillAdminUI();
+  adminLoadMon();
+  document.getElementById("adminPanel")?.classList.add("active");
+  document.getElementById("adminOverlay")?.classList.add("active");
+}
+function closeAdmin(){
+  document.getElementById("adminPanel")?.classList.remove("active");
+  document.getElementById("adminOverlay")?.classList.remove("active");
+}
+document.addEventListener("keydown", function(ev){
+  if(ev.ctrlKey && ev.shiftKey && (ev.key === "A" || ev.key === "a")){
+    ev.preventDefault();
+    const pan = document.getElementById("adminPanel");
+    if(pan?.classList.contains("active")) closeAdmin();
+    else openAdmin();
+  }
+});
+
+let musicVolume = 0.15;
+function setBattleVolume(v){
+  musicVolume = Math.max(0, Math.min(1, Number(v)/100));
+  const a = document.getElementById("bgm");
+  if(a) a.volume = musicVolume;
+  try { localStorage.setItem("pokeMusicVol", String(v)); } catch(e){}
+}
+function loadMusicVol(){
+  try {
+    const v = localStorage.getItem("pokeMusicVol");
+    if(v != null){
+      const el = document.getElementById("battleVol");
+      if(el) el.value = v;
+      musicVolume = Number(v)/100;
+      const a = document.getElementById("bgm");
+      if(a) a.volume = musicVolume;
+    }
+  } catch(e){}
+}
+loadAdminCfg();
+loadMusicVol();
+showMenu();
+
+</script>
+</body>
+</html>
